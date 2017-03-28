@@ -1,4 +1,4 @@
-//version: 1.2
+//version: 1.2.01
 /*
 The MIT License (MIT) 
 
@@ -357,10 +357,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				if(!gParsingData[vClass.CRX_CLASS_ID].remainingAbstractVirtuals.p.hasOwnProperty(tKey))
 					{continue;}
 
-				tRestOfMessage += (tIsNotFirst ? ", " : "") + tKey + "()";
+				tRestOfMessage += (tIsNotFirst ? ", \"" : "\"") + tKey + "()\"";
 				tIsNotFirst = true;
 			}
-			halt("CAN NOT CREATE INSTANCE OF ABSTRACT CLASS. MISSING IMPLEMENTATIONS FOR FUNCTIONS " + tRestOfMessage);
+			halt("CAN NOT CREATE INSTANCE OF ABSTRACT CLASS \"" + getClassNameOrID(vClass) + "\". MISSING IMPLEMENTATIONS FOR FUNCTIONS " + tRestOfMessage);
 		}
 
 		vObjects = _new_build(gCompiledClasses[vClass.CRX_CLASS_ID], vCRX_CLASS_INFOs, {p: false}, vLength);
@@ -1588,7 +1588,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							'AN ABSTRACT VIRTUAL FUNCTION, CAN NOT BE DECLARED FINAL');
 				}
 				else
-					{pVirtualFinalFunctions[tKey] = pClassNameOrID;}
+				{
+					if(pRemainingAbstractVirtuals.p[tKey])
+					{
+						delete pRemainingAbstractVirtuals.p[tKey];
+						pRemainingAbstractVirtuals.length--;
+					}
+
+					pVirtualFinalFunctions[tKey] = pClassNameOrID;
+				}
 			}
 			else
 			{
