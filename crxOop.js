@@ -1,4 +1,4 @@
-//version: 1.2.01
+//version: 1.2.02
 /*
 The MIT License (MIT) 
 
@@ -178,7 +178,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				return (gClassDefinitions[gClassSignatures[pClassDefinitionOrClassName]] || null);
 			}
 		}
-		else if(pClassDefinitionOrClassName.CRX_INTERFACE_ID !== undefined)
+		else if((pClassDefinitionOrClassName === null) || (typeof(pClassDefinitionOrClassName) !== "object") || 
+				(pClassDefinitionOrClassName.CRX_INTERFACE_ID !== undefined))
 			{return null;}
 		else
 		{
@@ -1149,10 +1150,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		gParsingData[pClass.CRX_CLASS_ID]['virtuals'] = {};
 		gParsingData[pClass.CRX_CLASS_ID]['nonVirtuals'] = {};
 		gParsingData[pClass.CRX_CLASS_ID]['virtualFinalFunctions'] = {};
+		gParsingData[pClass.CRX_CLASS_ID]['remainingAbstractVirtuals'] = {p:{}, length:0};
 		mergeToObject(gParsingData[pClass.CRX_CLASS_ID].virtuals, pParsingData.virtuals);
 		mergeToObject(gParsingData[pClass.CRX_CLASS_ID].nonVirtuals, pParsingData.nonVirtuals);
 		mergeToObject(gParsingData[pClass.CRX_CLASS_ID].virtualFinalFunctions, pParsingData.virtualFinalFunctions);
-		gParsingData[pClass.CRX_CLASS_ID].remainingAbstractVirtuals = pParsingData.remainingAbstractVirtuals;
+		mergeToObject(gParsingData[pClass.CRX_CLASS_ID].remainingAbstractVirtuals.p, pParsingData.remainingAbstractVirtuals.p);
+		gParsingData[pClass.CRX_CLASS_ID].remainingAbstractVirtuals.length = pParsingData.remainingAbstractVirtuals.length;
 	}
 	function inspectClassDefinition__interfaces(pClass, pErrors, pWarnings)
 	{
