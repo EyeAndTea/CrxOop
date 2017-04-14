@@ -1,4 +1,4 @@
-//version: 1.3
+//version: 1.3.01
 /*
 The MIT License (MIT) 
 
@@ -2438,7 +2438,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				var vClassID = getObjectClassID(this.THIS);
 
 				if(vClassID !== null)
-					{return (getClassInfoObject(this).CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] || null);}
+					{return (getClassInfoObject(pObject).CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] || null);}
 			}
 			halt("SECURITY ERROR WHILE USING 'O'");
 		}
