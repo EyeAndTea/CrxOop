@@ -1,7 +1,7 @@
 # CrxOop
 Bringing Object Oriented Programming (classical), and Proper Prototype Based Programming, To Javascript
 
-Supported Features (clasical OOP):
+Supported Features (classical OOP):
 
 - Classes.
 - Class public constructors.
@@ -20,16 +20,16 @@ Supported Features (clasical OOP):
 
 V1.4 of the library introduces a formalization of Prototype Based Programming, or as this author likes to call it, Prototype Object Based Programming (POBP).
 
-Supported Features (clasical POBP):
+Supported Features (POBP):
 
-- Shared Public Scope (Variable): When a variable member has this scope, it is equivilant to setting the variable on 'this' in the constructor function when coding using plain javascript. Hence, the word 'shared' in the scope name. The variable is visible to all inheriting structures, and only one copy of it exists per instance. Shared public variables are supported on roughly IE9 era browsers and later. 
-- Shared Public Scope (Function): When a function member has this scope, it is equivilant to setting the function on the prototype of the constructor function when coding using plain javscript. One, hence the word 'shared'. Two, there exists only one data entry for each function global to all objects of a particular prototype based data type. This would be contrary to setting the function on 'this' in the constructor function when coding using plain javascript. 
-- Shared Private Scope (Variables and Functions): When a variable member, or a function member, has this scope the member can only be accessed on 'this'. If a structure 'A' defines the member 'x' with this scope, then only functions of 'A' can see 'x'. 'x' is private to 'A'. However, note the word 'shared'. If Structure 'B' inherits structure 'A', then functions of 'B' also have access to 'x'. But not only that, but also if 'A' itself inherits 'C', then functions of 'C' can also see 'x'. In other words, exactly like the shared public scope case, but only members of the structure chain of the instance may see 'x'. It should be noted, that this privacy is across instances, like in OOP. Refer to the structure keyword 'O'. Shared private variables are supported on roughly IE9 era browsers and later. 
-- Private Scope (Variables and Functions): When a variable member, or a function member, has this scope the member can only be accessed on functions of the same structure. This is usualy enforced in plain javascript by declaring each such members as 'var' in the constructor function taking advantage of closures. However, unlike the plain javascript case, this privacy is across structure instances. Refer to the structure keyword 'O'. 
-- Public Constructors: The public scope is supported for constructors only. The scope, and constructors act as expected when coding using plain javascript, but with the added benefit of the guaranteed default contstructor invocation like in the OOP case. 
+- Shared Public Scope (Variable): When a variable member has this scope, it is equivalent to setting the variable on 'this' in the constructor function when coding using plain javascript. Hence, the word 'shared' in the scope name. The variable is visible to all inheriting structures, and only one copy of it exists per instance. Shared public variables are supported on roughly IE9 era browsers and later. 
+- Shared Public Scope (Function): When a function member has this scope, it is equivalent to setting the function on the prototype of the constructor function when coding using plain javascript. One, hence the word 'shared'. Two, there exists only one data entry for each function global to all objects of a particular prototype based data type. This would be contrary to setting the function on 'this' in the constructor function when coding using plain javascript. 
+- Shared Private Scope (Variables and Functions): When a variable member, or a function member, has this scope the member can only be accessed on 'this'. If a structure 'A' defines the member 'x' with this scope, then only functions of 'A' can see 'x'. 'x' is private to 'A'. However, note the word 'shared'. If Structure 'B' inherits structure 'A', then functions of 'B' also have access to 'x'. But not only that, but also if 'A' itself inherits 'C', then functions of 'C' can also see 'x'. In other words, exactly like the shared public scope case, but only members of the structure chain of the instance may see 'x'. It should be noted, that this privacy is across instances, like in OOP. Refer to the structure keyword 'O' in the documentation. Shared private variables are supported on roughly IE9 era browsers and later. 
+- Private Scope (Variables and Functions): When a variable member, or a function member, has this scope the member can only be accessed on functions of the same structure. This is usualy enforced in plain javascript by declaring each such members as 'var' in the constructor function taking advantage of closures. However, unlike the plain javascript case, this privacy is across structure instances. Refer to the structure keyword 'O' in the documentation. 
+- Public Constructors: The public scope is supported for constructors only. The scope, and constructors act as expected when coding using plain javascript, but with the added benefit of the guaranteed default constructor invocation like in the OOP case. 
 - Multiple Inheritance. 
 - Data Typing. See also Structrure Typing. 
-- Iteration using the native javscript built "for in" loop mechanism. CrxOop provides HASOWN(), an equivilant to the built in hasOwnProperty().
+- Iteration using the native javascript built "for in" loop mechanism. CrxOop provides HASOWN(), an equivalent to the built in hasOwnProperty().
 
 
 For details and documentation refer to http://creatrix.ca/crxoop
