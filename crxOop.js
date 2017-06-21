@@ -1,4 +1,4 @@
-//version: 1.4
+//version: 1.4.01
 /*
 The MIT License (MIT) 
 
@@ -3156,11 +3156,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			setObjectReadOnlyMember(vObjects[tI], "CRX_STRUCTURE_INFO", secureClassData(pCRX_STRUCTURE_INFOs[tI]));
 			setObjectReadOnlyMember(vObjects[tI], "THIS", vObjects[tI]);
+			vObjects[tI]['CONSTRUCT'] = _structureConstruct;
 		}
 		
 		//setObjectsReadOnlyMember(vObjects, "SR", _sr_structure);
 		//setObjectsReadOnlyMember(vObjects, "CRX_STRUCTURE_ID", pCompiledStructe.CRX_STRUCTURE_ID);
-		setObjectsReadOnlyMember(vObjects, 'CONSTRUCT', _structureConstruct);
 
 		if(pCompiledStructe.SHARED)
 		{
