@@ -13,6 +13,7 @@ Supported Features (classical OOP):
 - Class public and private static variables. Private static variables are supported on roughly IE9 era browsers and later.
 - Class public and private constants. Private constants are supported on roughly IE9 era browsers and later.
 - Class public and private static functions. These are supported in roughly IE9 era browsers and later. More precisely, from the IE family, IE8 and earlier will not work, and from the Safari family, only Safari running on very recent MAC OS versions will work. Further more, these only work in the Non Strict JS version of the library. 
+- Friend Classes.
 - Abstract Classes.
 - Anonymous Classes.
 - Interfaces (a Class with only public pure virtual methods).
