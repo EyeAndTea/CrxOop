@@ -1,4 +1,4 @@
-//version: 1.5
+//version: 1.5.1
 /*
 The MIT License (MIT) 
 
@@ -515,7 +515,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				halt("CAN NOT CREATE INSTANCE OF ABSTRACT CLASS \"" + getClassNameOrID(vClass) + "\". MISSING IMPLEMENTATIONS FOR FUNCTIONS " + tRestOfMessage);
 			}
 
-			vObjects = _new_build(gCompiledClasses[vClass.CRX_CLASS_ID], tCRX_CLASS_INFOs, {p: false}, vLength);
+			vObjects = _new_build(gCompiledClasses[vClass.CRX_CLASS_ID], tCRX_CLASS_INFOs, /*{p: false},*/ vLength);
 
 			if(vObjects.length === 0)
 				{halt("UNKNOWN ERROR DURING CALL TO crx_new");}
@@ -529,7 +529,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{
 					setObjectReadOnlyMember(tCRX_CLASS_INFOs[tI].
 							CRX_OBJECT_SEGMENTS[gClassVTables_firstOccurances[
-							vClass.CRX_CLASS_ID][tKey]], tKey, ftable_this_call__virtualPublic(vClass.CRX_CLASS_ID, "puv", tKey));
+							vClass.CRX_CLASS_ID][tKey]], tKey, ftable_this_call__virtual(vClass.CRX_CLASS_ID, "puv", tKey));
 				}
 			}
 
@@ -697,7 +697,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{return vObjects;}
 		}
 	}
-	function _new_build(pCompiledClass, pCRX_CLASS_INFOs, pWereProtectedMembersEncountered, pLength)
+	function _new_build(pCompiledClass, pCRX_CLASS_INFOs, /*pWereProtectedMembersEncountered,*/ pLength)
 	{
 		var vObjects = [];
 		var vObjects_privates = [];
@@ -708,7 +708,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 		if(pCompiledClass.EXTENDS !== null)
 		{
-			tObjects = _new_build(pCompiledClass.EXTENDS, pCRX_CLASS_INFOs, pWereProtectedMembersEncountered, pLength);
+			tObjects = _new_build(pCompiledClass.EXTENDS, pCRX_CLASS_INFOs, /*pWereProtectedMembersEncountered,*/ pLength);
 
 			for(tI = 0; tI < pLength; tI++)
 			{
@@ -727,6 +727,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 				pCRX_CLASS_INFOs[tI].CRX_OBJECT_SEGMENTS = {};
 				pCRX_CLASS_INFOs[tI].CRX_PRIVATE_OBJECT_SEGMENTS = {};
+				pCRX_CLASS_INFOs[tI].CRX_IS_ANNULED = false;
 
 				setObjectReadOnlyMember(vObjects[tI], "CRX_CLASS_INFO", secureClassData(pCRX_CLASS_INFOs[tI]));
 			}
@@ -737,6 +738,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{vObjects[tI] = gFunc_createObject(vObjects[tI]);}
 		}
 		
+		/* //PRE V1.51 OPTIMIZATION. HAD TO BE REMOVED DUE TO IMPLEMNTING FRIENDS. REFER ALSO TO TEST CASE fri003
 		if(pCompiledClass.PROTECTED)
 			{pWereProtectedMembersEncountered.p = true;}
 
@@ -750,13 +752,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 		}
 		else
-		{
+		{*/
 			for(tI = 0; tI < pLength; tI++)
 			{
 				vObjects_privates[tI] = gFunc_createObject(vObjects[tI]);
 				pCRX_CLASS_INFOs[tI].CRX_PRIVATE_OBJECT_SEGMENTS[pCompiledClass.CRX_CLASS_ID] =
 						vObjects_privates[tI];
 				setObjectReadOnlyMember(vObjects_privates[tI], "O", _this(vObjects_privates[tI]));
+				setObjectReadOnlyMember(vObjects_privates[tI], "ANNUL", _annul);
 			}
 
 			if(pCompiledClass.PRIVATE)
@@ -835,7 +838,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							gClassPrivateStatics[pCompiledClass.CRX_CLASS_ID]);
 				}
 			}
-		}
+		//}
 
 		for(tI = 0; tI < pLength; tI++)
 			{setObjectReadOnlyMember(vObjects[tI], 'THIS', vObjects[tI]);}
@@ -1157,7 +1160,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 		halt("ILLEGAL ACCESS TO PROTECTED METHOD '" + getClassNameOrID(gClassDefinitions[pClassID]) + "::" + pKey + "()'");
 	}
-	function ftable_this_call__virtualPublic(pClassID, pFTableIndex, pKey/*, pFunction*/)
+	function ftable_this_call__virtual(pClassID, pFTableIndex, pKey/*, pFunction*/)
 	{
 		if(gClassFTables[pClassID] && gClassFTables[pClassID][pFTableIndex] &&
 				gClassFTables[pClassID][pFTableIndex][pKey])
@@ -1175,7 +1178,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					if(gIsHalted){return;}
 
 					return /*pFunction*/gClassVTables[pClassID][pKey].apply(
-							ftable_this_call__virtualPublic__checkAccessToProtectedIsValidAndGetThis(this, pClassID, pKey,
+							ftable_this_call__virtual__checkAccessToProtectedIsValidAndGetThis(this, pClassID, pKey,
 							(gIS_STRICT_JS ? null : gClassFTables[pClassID][pFTableIndex][pKey].caller)), arguments);
 				}
 			})(pClassID, pKey/*, pFunction*/);
@@ -1183,7 +1186,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 		return gClassFTables[pClassID][pFTableIndex][pKey];
 	}
-	function ftable_this_call__virtualPublic__checkAccessToProtectedIsValidAndGetThis(pCallerThis, pClassID, pKey, pCaller)
+	function ftable_this_call__virtual__checkAccessToProtectedIsValidAndGetThis(pCallerThis, pClassID, pKey, pCaller)
 	{
 		var vClassInfoObject = getClassInfoObject(pCallerThis);
 		var vClassID = getObjectClassIDGivenClassInfoObject(pCallerThis.THIS, vClassInfoObject);
@@ -1408,7 +1411,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 	}
 	/*END: SUPPRT STATIC FUNCTIONS (NON STRICT JS MODE ONLY)*/
-	function getClassInfoObject(pObject)
+	function getClassInfoObject(pObject, pIsToNotCheckForAnnuls)
 	{
 		/*var vKey = gCODE_KEY;
 		var vReturn = pObject.CRX_CLASS_INFO(gCODE_KEY);
@@ -1424,6 +1427,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 		if(vReturn === null)
 			{halt('SECURITY ERROR, ACCESS VIOLATION');}
+		else if(vReturn.CRX_IS_ANNULED && !pIsToNotCheckForAnnuls)
+		{
+			if(pObject.CRX_CLASS_ID)
+				{halt('INSTANCE OF CLASS "' + getClassNameOrID(gClassDefinitions[pObject.CRX_CLASS_ID]) + '" IS ANNUL');}
+			halt('UNKNOWN ERROR');
+		}
 
 		return vReturn;
 	}
@@ -2902,7 +2911,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					{return this[pMemberName].apply(this, Array.prototype.slice.call(arguments, 2));}
 				else if(gClassMemberTypes[vClassID].FUNCTIONS[pMemberName] === 2)
 				{
-					var tFunction = ftable_this_call__virtualPublic(vClassID, "puv", pMemberName);
+					var tFunction = ftable_this_call__virtual(vClassID, "puv", pMemberName);
 
 					return tFunction.apply(vObject, Array.prototype.slice.call(arguments, 2));
 				}
@@ -2971,7 +2980,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 									{
 										if(!tIsFunctionProtected || (tIsCallerAllowedProtectedAccess))
 										{
-											var tFunction = ftable_this_call__virtualPublic(vClassID, "puv", pMemberName);
+											var tFunction = ftable_this_call__virtual(vClassID, "puv", pMemberName);
 											return tFunction.apply(tClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID],
 													Array.prototype.slice.call(arguments, 2));
 										}
@@ -3056,6 +3065,26 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			{return null;}
 	}
 	/*END: SUPPORT STATIC FUNCTIONS (NON STRICT JS MODE ONLY)*/
+	
+	function _annul()
+	{
+		var vClassInfoObject = getClassInfoObject(this);
+		var vClassID = getObjectClassIDGivenClassInfoObject(this.THIS, vClassInfoObject);
+
+		if(vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] === this)
+			{vClassInfoObject.CRX_IS_ANNULED = true;}
+		else
+			{halt("SECURITY ERROR WHILE USING 'ANNUL'");}
+
+		return vClassInfoObject.CRX_IS_ANNULED;
+	}
+	function _isAnnul(pObject)
+	{
+		if(pObject.CRX_CLASS_INFO)
+			{return getClassInfoObject(pObject, true).CRX_IS_ANNULED;}
+		return false;
+	}
+	
 	function _instanceof(pObject, pClassOrInterfaceOrStructure)
 	{
 		if(typeof(pObject) === 'string')
@@ -4631,6 +4660,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	setObjectReadOnlyMember(window, "crx_registerStructure", registerStructure);
 	setObjectReadOnlyMember(window, "crx_static", (gIS_STRICT_JS ? _static : _static__withStaticFunctionsSupport));
 	setObjectReadOnlyMember(crxOop, "setLogger", setLogger);	
+	setObjectReadOnlyMember(crxOop, "isAnnul", _isAnnul);
 	//setObjectReadOnlyMember(window, "crxOop_assertFunctionIdentity", assertFunctionIdentity);
 	//setObjectReadOnlyMember(window, "crxOop_assertIdentity", assertIdentity);
 	setObjectReadOnlyMember(crxOop, "instanceOf", _instanceof);
@@ -4647,10 +4677,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	setObjectReadOnlyMember(crxOop, "isClassRegistered", isClassRegistered);
 	setObjectReadOnlyMember(crxOop, "getObjectClassName", function (pObject)
 	{
-		if(!pObject.CRX_CLASS_INFO)
+		if(!pObject.CRX_CLASS_INFO || !pObject.THIS)
 			{return null;}
 
-		var vClassID = getObjectClassID(pObject);
+		var vClassID = getObjectClassID(pObject.THIS);
 
 		if(vClassID && gClassDefinitions.hasOwnProperty(vClassID) && gClassDefinitions[vClassID].CRX_CLASS_NAME &&
 				gClassSignatures.hasOwnProperty(gClassDefinitions[vClassID].CRX_CLASS_NAME))
