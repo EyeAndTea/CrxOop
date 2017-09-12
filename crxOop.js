@@ -1,4 +1,4 @@
-//version: 1.5.1
+//version: 1.5.2
 /*
 The MIT License (MIT) 
 
@@ -838,7 +838,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							gClassPrivateStatics[pCompiledClass.CRX_CLASS_ID]);
 				}
 			}
-		//}
+		/*}*/
 
 		for(tI = 0; tI < pLength; tI++)
 			{setObjectReadOnlyMember(vObjects[tI], 'THIS', vObjects[tI]);}
@@ -1057,7 +1057,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					};
 				})(pClassID, pFunction);
 
-				signFunction(pFunction, pClassID);
+				signClassFunction(pFunction, pClassID);
 			}
 			else
 			{
@@ -1081,7 +1081,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					};
 				})(pClassID);
 
-				signFunction(gClassFTables[pClassID]['pub']['CONSTRUCT'], pClassID);
+				signClassFunction(gClassFTables[pClassID]['pub']['CONSTRUCT'], pClassID);
 			}
 
 			return gClassFTables[pClassID]["pub"]["CONSTRUCT"];
@@ -1892,7 +1892,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 									pClassStructure['VIRTUAL']['FUNCTIONS'], pVirtuals, pNonVirtuals, pVirtualFinalFunctions,
 											pRemainingAbstractVirtuals, pMembers);
 						}
-						/*else if(tKey2 === "FINAL")
+						else if(tKey2 === "FINAL")
 						{
 							for(var tKey3 in pClassStructure["VIRTUAL"]["FINAL"])
 							{
@@ -1906,7 +1906,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 											pRemainingAbstractVirtuals, pMembers);
 								}
 							}
-						}*/
+						}
 						else
 							{pErrors.push('"PRIVATE VIRTUAL ' + tKey2 + '" IS NOT ALLOWED. FOUND IN CLASS "' + pClassNameOrID + '"');}
 					}
@@ -2427,7 +2427,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						vCompiledClass.PUBLIC_FUNCTIONS.push([tKey, pClass["PUBLIC"]["FUNCTIONS"][tKey]]);
 						vClassMemberScopes[tKey] = SCOPE_PUBLIC;
 						vClassMemberTypes.FUNCTIONS[tKey] = 1;
-						signFunction(pClass["PUBLIC"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+						signClassFunction(pClass["PUBLIC"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 					}
 				}
 			}
@@ -2444,7 +2444,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							if((pClass["PUBLIC"]["VIRTUAL"]["FUNCTIONS"][tKey] !== 0))
 							{
 								vClassMemberTypes.FUNCTIONS[tKey] = 2;
-								signFunction(pClass["PUBLIC"]["VIRTUAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+								signClassFunction(pClass["PUBLIC"]["VIRTUAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 							}
 							else
 								{vClassMemberTypes.FUNCTIONS[tKey] = 3;}
@@ -2463,7 +2463,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							vCompiledClass.PUBLIC_VIRTUAL_FUNCTIONS.push([tKey, pClass["PUBLIC"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey]]);
 							vClassMemberScopes[tKey] = SCOPE_PUBLIC;
 							vClassMemberTypes.FUNCTIONS[tKey] = 2;
-							signFunction(pClass["PUBLIC"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+							signClassFunction(pClass["PUBLIC"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 						}
 					}
 				}
@@ -2529,7 +2529,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						}
 						vClassMemberScopes[tKey] = SCOPE_PRIVATE;
 						vClassMemberTypes.FUNCTIONS[tKey] = 1;
-						signFunction(pClass["PRIVATE"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+						signClassFunction(pClass["PRIVATE"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 					}
 				}
 			}
@@ -2546,7 +2546,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							if((pClass["PRIVATE"]["VIRTUAL"]["FUNCTIONS"][tKey] !== 0))
 							{
 								vClassMemberTypes.FUNCTIONS[tKey] = 2;
-								signFunction(pClass["PRIVATE"]["VIRTUAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+								signClassFunction(pClass["PRIVATE"]["VIRTUAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 							}
 							else
 								{vClassMemberTypes.FUNCTIONS[tKey] = 3;}
@@ -2565,7 +2565,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							vCompiledClass.PRIVATE_VIRTUAL_FUNCTIONS.push([tKey, pClass["PRIVATE"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey]]);
 							vClassMemberScopes[tKey] = SCOPE_PRIVATE;
 							vClassMemberTypes.FUNCTIONS[tKey] = 2;
-							signFunction(pClass["PRIVATE"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+							signClassFunction(pClass["PRIVATE"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 						}
 					}
 				}
@@ -2600,7 +2600,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						vCompiledClass.PROTECTED_FUNCTIONS.push([tKey, pClass["PROTECTED"]["FUNCTIONS"][tKey]]);
 						vClassMemberScopes[tKey] = SCOPE_PROTECTED;
 						vClassMemberTypes.FUNCTIONS[tKey] = 1;
-						signFunction(pClass["PROTECTED"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+						signClassFunction(pClass["PROTECTED"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 					}
 				}
 			}
@@ -2617,7 +2617,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							if((pClass["PROTECTED"]["VIRTUAL"]["FUNCTIONS"][tKey] !== 0))
 							{
 								vClassMemberTypes.FUNCTIONS[tKey] = 2;
-								signFunction(pClass["PROTECTED"]["VIRTUAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+								signClassFunction(pClass["PROTECTED"]["VIRTUAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 							}
 							else
 								{vClassMemberTypes.FUNCTIONS[tKey] = 3;}
@@ -2636,7 +2636,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							vCompiledClass.PROTECTED_VIRTUAL_FUNCTIONS.push([tKey, pClass["PROTECTED"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey]]);
 							vClassMemberScopes[tKey] = SCOPE_PROTECTED;
 							vClassMemberTypes.FUNCTIONS[tKey] = 2;
-							signFunction(pClass["PROTECTED"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
+							signClassFunction(pClass["PROTECTED"]["VIRTUAL"]["FINAL"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID);
 						}
 					}
 				}
@@ -2757,7 +2757,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 							gClassPublicStatics[pClass.CRX_CLASS_ID][tKey] =
 									static_call(pClass.CRX_CLASS_ID, pClass["PUBLIC"]["STATIC"]["FUNCTIONS"][tKey]);
-							signFunction(pClass["PUBLIC"]["STATIC"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID, true);
+							signClassFunction(pClass["PUBLIC"]["STATIC"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID, true);
 						}
 					}
 				}
@@ -2813,7 +2813,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 							setObjectReadOnlyMember(gClassPrivateStatics[pClass.CRX_CLASS_ID],
 									tKey, static_call(pClass.CRX_CLASS_ID, pClass["PRIVATE"]["STATIC"]["FUNCTIONS"][tKey]));
-							signFunction(pClass["PRIVATE"]["STATIC"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID, true);
+							signClassFunction(pClass["PRIVATE"]["STATIC"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID, true);
 						}
 					}
 				}
@@ -4444,22 +4444,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			gSecureClassData_return = pData;
 		};
 	}
-	function signFunction(pFunction, pClassID, pIsStatic)
+	function signClassFunction(pFunction, pClassID, pIsStatic)
 	{
-		var vData = secureClassData(
+		if(pFunction.hasOwnProperty('CRX_FUNCTION_ID'))
 		{
-			'classID': pClassID,
-			'func': pFunction,
-			'isStatic': (pIsStatic ? true : false)
-		});
-
-		if(gIsReadOnlyWriteSupported)
-		{
-			setObjectReadOnlyMember.o.value = vData;
-			Object.defineProperty(pFunction, 'CRX_FUNCTION_ID', setObjectReadOnlyMember.o);
+			halt('UNKNOWN ERROR WHEN SIGNING CLASS FUNCTION IN CLASS \"' + getClassNameOrID(gClassDefinitions[pClassID]) + 
+					'\". IS FUNCTION ALREADY BOUND?');
 		}
-		else
-			{pFunction['CRX_FUNCTION_ID'] = vData;}
+
+		signFunction(pFunction, {'cf': {'classID': pClassID, 'isStatic': (pIsStatic ? true : false)}});
 	}
 	/*
 	*	The reason for the two parameters pIsToAllowStaticFunctionsOnly and pIsToAllowFriendsOnlyWhenNonStatic is allow usage
@@ -4478,14 +4471,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 		if(pCaller && pCaller.CRX_FUNCTION_ID)
 		{
-			var tData = null;
-			
-			pCaller.CRX_FUNCTION_ID();
-			tData = gSecureClassData_return;
-			gSecureClassData_return = null;
+			var tData = getSignedFunctionData(pCaller);
 
-			if((tData === null) || (tData.func !== pCaller))
-				{halt('SECURITY ERROR, ACCESS VIOLATION');}
+			if((tData === null) || (!tData.cf))
+				{return false;}
+			else
+				{tData = tData.cf;}
 
 			if(pIsToAllowStaticFunctionsOnly)
 			{
@@ -4504,6 +4495,45 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 
 		return false;
+	}
+	function signFunction(pFunction, pData)
+	{
+		if(pFunction.hasOwnProperty('CRX_FUNCTION_ID'))
+			{return false;}
+
+		var vData = secureClassData(
+		{
+			'func': pFunction,
+			'data': pData
+		});
+
+		if(gIsReadOnlyWriteSupported)
+		{
+			setObjectReadOnlyMember.o.value = vData;
+			Object.defineProperty(pFunction, 'CRX_FUNCTION_ID', setObjectReadOnlyMember.o);
+		}
+		else
+			{pFunction['CRX_FUNCTION_ID'] = vData;}
+	}
+	function getSignedFunctionData(pFunction)
+	{
+		if(!pFunction.CRX_FUNCTION_ID)
+			{return null;}
+
+		var vData = null;
+			
+		pFunction.CRX_FUNCTION_ID();
+		vData = gSecureClassData_return;
+		gSecureClassData_return = null;
+
+		if((vData === null) || (vData.func !== pFunction))
+		{
+			if((vData === null) || pFunction.hasOwnProperty('CRX_FUNCTION_ID'))
+				{halt('SECURITY ERROR, ACCESS VIOLATION');}
+			return false;
+		}
+
+		return vData.data;
 	}
 	function assertIdentity(pServerInboundKey)
 	{
@@ -4629,7 +4659,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 	}
 
-
 	function setLogger(pFunction)
 	{
 		if(gIsHalted || gIsStarted){return false;}
@@ -4642,11 +4671,133 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	function crxOop_var(pVariable, pIsToBeLenient)
 	{
 		if(typeof(pVariable) === "function")
-			{return function(){if(gIsHalted){return;} return pVariable.apply(null, arguments);}}
+		{
+			var tSignatureData = getSignedFunctionData(pVariable);
+
+			if((tSignatureData === null) || (tSignatureData.bf && tSignatureData.bf[0] !== null))
+				{return crxOop_bind(pVariable, null, false, true, -1, null);}
+			else
+				{return pVariable;}
+		}
 		else
 			{return pVariable;}
 	}
+	function crxOop_bind(pFunction, pThis, pIsToProtectFromDoubleBinding, pIsToSetPrototype, pLength, pBoundArguments)
+	{
+		if ((typeof pFunction !== 'function') || (Object.prototype.toString.call(pFunction) !== '[object Function]'))
+			{return null;}
 
+		var vBoundArguments = (pBoundArguments ? pBoundArguments : []);
+		var vFunc_return = pFunction;
+		var vFunc = null;
+		var vSignedFunctionData = getSignedFunctionData(pFunction);
+		var vSignatureData = null;
+		var vIsToProceed = true;
+
+		if(vSignedFunctionData && vSignedFunctionData.bf)
+			{vSignatureData = vSignedFunctionData.bf}
+
+		if(pIsToProtectFromDoubleBinding && (vSignatureData !== null))
+		{
+			if((pThis === vSignatureData[0]) && (pIsToSetPrototype === vSignatureData[1]) && ((pLength ? pLength : 0) === vSignatureData[2]) &&
+					((pBoundArguments ? vBoundArguments : null) === vSignatureData[3]))
+				{vIsToProceed = false;}
+		}
+
+		if(vIsToProceed)
+		{
+			if(pIsToSetPrototype)
+			{
+				vFunc = function()
+				{
+					if(this instanceof vFunc_return)
+					{
+						var result = pFunction.apply(this, vBoundArguments.concat(Array.prototype.slice.call(arguments)));
+						
+						if(Object(result) === result)
+							{return result;}
+						else
+							{return this;}
+					}
+					else 
+						{return pFunction.apply(pThis, vBoundArguments.concat(Array.prototype.slice.call(arguments)));}
+				};
+			}
+			else
+			{
+				vFunc = function()
+					{return pFunction.apply(pThis, vBoundArguments.concat(Array.prototype.slice.call(arguments)));}
+			}
+
+			if(pLength)
+			{
+				var tLength = (((pLength > 0) && (pLength < 11)) ? pLength : 
+						Math.max(0, pFunction.length - vBoundArguments.length));
+
+				switch(tLength)
+				{
+					case 0: vFunc_return = function(){return vFunc.apply(this, arguments);};
+					case 1: vFunc_return = function(a){return vFunc.apply(this, arguments);};
+					case 2: vFunc_return = function(a,b){return vFunc.apply(this, arguments);};
+					case 3: vFunc_return = function(a,b,c){return vFunc.apply(this, arguments);};
+					case 4: vFunc_return = function(a,b,c,d){return vFunc.apply(this, arguments);};
+					case 5: vFunc_return = function(a,b,c,d,e){return vFunc.apply(this, arguments);};
+					case 6: vFunc_return = function(a,b,c,d,e,f){return vFunc.apply(this, arguments);};
+					case 7: vFunc_return = function(a,b,c,d,e,f,g){return vFunc.apply(this, arguments);};
+					case 8: vFunc_return = function(a,b,c,d,e,f,g,h){return vFunc.apply(this, arguments);};
+					case 9: vFunc_return = function(a,b,c,d,e,f,g,h,i){return vFunc.apply(this, arguments);};
+					case 10: vFunc_return = function(a,b,c,d,e,f,g,h,i,j){return vFunc.apply(this, arguments);};
+					default: vFunc_return = function(){return vFunc.apply(this, arguments);};
+				}
+			}
+			else
+				{vFunc_return = function(){return vFunc.apply(this, arguments);};}
+
+
+			if(pIsToSetPrototype && pFunction.prototype)
+			{
+				var tFunc = function tFunc(){};
+
+				tFunc.prototype = pFunction.prototype;
+				vFunc_return.prototype = new tFunc();
+				tFunc.prototype = null;
+			}
+
+			if(vSignedFunctionData)
+				{vSignedFunctionData['bf'] = [pThis, pIsToSetPrototype, (pLength ? pLength : 0), (pBoundArguments ? vBoundArguments : null)];}
+			else
+				{signFunction(vFunc_return, {'bf': [pThis, pIsToSetPrototype, (pLength ? pLength : 0), (pBoundArguments ? vBoundArguments : null)]});}
+		}
+
+		return vFunc_return;
+	}
+	function crxOop_setTimeout()
+	{
+		var vFunction = arguments[0];
+
+		arguments[0] = function()
+		{
+			if(gIsHalted){return;}
+			vFunction();
+		};
+
+		return window.setTimeout.apply(window, arguments);
+	}
+	function crxOop_setInterval()
+	{
+		var vFunction = arguments[0];
+		var vInterval = -1;
+
+		arguments[0] = function()
+		{
+			if(gIsHalted){window.clearInterval(vInterval); return;}
+			vFunction();
+		};
+		vInterval = window.setInterval.apply(window, arguments);
+
+		return vInterval;
+	}
+	
 	setObjectReadOnlyMember(window, "crxOop", {});
 	setObjectReadOnlyMember(crxOop, "HASOWN_TYPE_VAR", HASOWN_TYPE_VAR);
 	setObjectReadOnlyMember(crxOop, "HASOWN_TYPE_FUNCTION", HASOWN_TYPE_FUNCTION);
@@ -4747,6 +4898,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	setObjectReadOnlyMember(crxOop, "areStructuresLocked", function(){return gIsReadOnlyWriteSupported && Object.seal && gFunc_freezeObject && gIS_STRICT_MODE;});
 	setObjectReadOnlyMember(crxOop, "areConstantsLocked", function(){return crxOop.areStructuresLocked() || gAreConstantsToBeCopiedToObjects;});
 	setObjectReadOnlyMember(crxOop, "var", crxOop_var);
+	setObjectReadOnlyMember(crxOop, "bindFunction", crxOop_bind);
+	setObjectReadOnlyMember(crxOop, "setTimeout", crxOop_setTimeout);
+	setObjectReadOnlyMember(crxOop, "setInterval", crxOop_setInterval);
 	setObjectReadOnlyMember(crxOop, "setRunningTestCasesMode", function(pIsRunningTestCases){if(gIsStarted){return;}if(pIsRunningTestCases){gIsRunningTestCasesMode = true;}});
 	setObjectReadOnlyMember(crxOop, "unHalt", function(pMessage){if(gIsRunningTestCasesMode){if(!gIsHalted){halt("UNHALTING WHEN NOT HALTED: " + pMessage);} gIsHalted = false;}});
 	
