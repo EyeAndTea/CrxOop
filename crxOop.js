@@ -1,4 +1,4 @@
-//version: 1.5.2
+//version: 1.6
 /*
 The MIT License (MIT) 
 
@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 */
 (function()
 {
-	//"use strict";
+	"use strict";
 
 	if(window.crx_registerClass)
 		{return;}
@@ -125,6 +125,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	var gStackOfIsConstructorCalled_structures = [];
 	var gIsConstructorCalled_structures = {};
 	var gTestObject = {};
+	var gTraceKitReport = null;
+	var gStackKitHandler = null;
+	var gTraceKitError = "";
+	var gError_start = null;
+	var gError_end = null;
+	var gWereCodeBoundriesEvaluated = false;
 
 	if(!Object.create)
 	{
@@ -179,7 +185,262 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		return (((typeof(pObject) === "object") || (typeof(pObject) === "function")) ?
 				(gNamesOfTypes[Object.prototype.toString.call(pObject)] || "object") : (typeof(pObject)));
 	}
+	
+	if(window.TraceKit && window.TraceKit.report && window.TraceKit.report.subscribe)
+	{		
+		gStackKitHandler = function(pError)
+		{
+			if((pError.message === 'CrxOop::start') || (pError.message === 'CrxOop::end'))
+			{
+				var tObject = null;
 
+				if(pError.stack && (getType(pError.stack) === 'array') && pError.stack.length > 0)
+				{
+					tObject = {"fileName": (pError.stack[0].url ? pError.stack[0].url.toLowerCase() : null), 
+							"line": (pError.stack[0].line ? pError.stack[0].line : -1), 
+							"column": (pError.stack[0].column ? pError.stack[0].column : -1)};
+				}
+				else
+					{tObject = {};}
+
+				if((pError.message === 'CrxOop::start') && (gError_start === null))
+					{gError_start = tObject ;}
+				else if((pError.message === 'CrxOop::end') && (gError_end === null))
+				{
+					gError_end = tObject;
+					gWereCodeBoundriesEvaluated = true;
+				}
+			}
+			else
+			{
+				var vMessage = "";
+
+				if(pError.message)
+					{g_Func_log(pError.message, 0);}
+
+				if(pError.stack && (getType(pError.stack) === 'array'))
+				{
+					vMessage = "CrxOop: Stack Trace \n";
+
+					for(var tI = 0; tI < pError.stack.length; tI++)
+					{
+						if(!gTraceKitReport_isToSkipErrorOutPut((pError.stack[tI].url ? pError.stack[tI].url : null),
+									(pError.stack[tI].line ? pError.stack[tI].line : null), 
+									(pError.stack[tI].column ? pError.stack[tI].column : null)))
+						{
+							vMessage += pError.stack[tI].url + " :: ln<" + pError.stack[tI].line + 
+									(pError.stack[tI].column ? ":" + pError.stack[tI].column : "") + ">";
+
+							if(pError.stack[tI].func && (pError.stack[tI].func !== '?'))
+							{
+								vMessage += " => " + pError.stack[tI].func;
+							}
+							vMessage += "\n";
+						}
+					}
+				}
+				window.TraceKit.report.unsubscribe(gStackKitHandler);
+				
+				g_Func_log(vMessage, 0);
+			}
+		};
+
+		gTraceKitReport = function(pString)
+		{
+			var vReturn = null;
+			
+			window.TraceKit.report.subscribe(gStackKitHandler);
+			
+			try
+				{window.TraceKit.report(pString);}
+			catch(tE)
+				{vReturn = tE;}
+				
+			/*window.TraceKit.report(pString);
+	
+			//vReturn = gTraceKitError;	
+			//gTraceKitError = "";
+			
+			//if(vReturn)
+				//{return pString;}*/
+		};
+	}
+	else if(window.StackTrace && window.StackTrace.get && window.StackTrace.fromError)
+	{
+		gTraceKitReport = function(pError, pMessage)
+		{
+			if((pError.message === 'CrxOop::start') || (pError.message === 'CrxOop::end'))
+			{
+				window.StackTrace.fromError(pError).then(function(pError)
+				{
+					var tObject = null;
+
+					if(pError.length > 0)
+					{
+						tObject = {"fileName": (pError[0].fileName ? pError[0].fileName.toLowerCase() : null), 
+								"line": (pError[0].lineNumber ? pError[0].lineNumber : -1), 
+								"column": (pError[0].columnNumber ? pError[0].columnNumber : -1)};
+					}
+
+					if((pError.message === 'CrxOop::start') && (gError_start === null))
+						{gError_start = tObject;}
+					else if((pError.message === 'CrxOop::end') && (gError_end === null))
+					{
+						gError_end = tObject;
+						gWereCodeBoundriesEvaluated = true;
+					}
+					//g_Func_log(vMessage, 0);
+				})['catch'](function(pError)
+				{
+				});
+			}
+			else
+			{
+				window.StackTrace.fromError(pError).then(function(pError)
+				{
+					var vMessage = pMessage + '\n' + "CrxOop: Stack Trace \n";
+
+					for(var tI = 0; tI < pError.length; tI++)
+					{
+						if(!gTraceKitReport_isToSkipErrorOutPut((pError[tI].fileName ? pError[tI].fileName : null),
+									(pError[tI].lineNumber ? pError[tI].lineNumber : null), 
+									(pError[tI].columnNumber ? pError[tI].columnNumber : null)))
+						{
+							vMessage += pError[tI].fileName + " :: ln<" + pError[tI].lineNumber + 
+									(pError[tI].columnNumber ? ":" + pError[tI].columnNumber : "") + ">\t";
+
+							if(pError[tI].functionName)
+							{
+								vMessage += " => " + pError[tI].functionName;
+							}
+							vMessage += "\n";
+						}
+					}
+
+					g_Func_log(vMessage, 0);
+				})['catch'](function(pError)
+				{
+					//g_Func_log(pError, 0);
+				});
+			}
+		};
+	}
+	else
+	{
+		gTraceKitReport = function(pError, pMessage)
+		{
+			var tRegExp = new RegExp(".*?[\\(\\[\\s\\:](\\d+)([:]+(\\d*))?.*");
+			var tRegExp2 = new RegExp(".+\\/([^\\/]+\\.js)[^a-zA-Z\\\"\\']*");
+
+			if((pError.message === 'CrxOop::start') || (pError.message === 'CrxOop::end'))
+			{
+				var tObject = null;
+				var vMessage = "" + pError.stack || pError.stacktrace;
+				var tTrace = [];
+
+				if(vMessage.length > 0)
+					{tTrace = vMessage.split('\n');}
+
+				if(tTrace.length > 0)
+				{
+					var tMatches = tRegExp.exec(tTrace[0]);
+					var tMatches2 = tRegExp2.exec(tTrace[0]);
+					
+					if(!tMatches && !tMatches2 && (tTrace.length > 1) && ((tTrace[0].indexOf('CrxOop::start') >= 0) || 
+							(tTrace[0].indexOf('CrxOop::end') >= 0)))
+					{
+						tMatches = tRegExp.exec(tTrace[1]);
+						tMatches2 = tRegExp2.exec(tTrace[1]);
+					}
+
+					tObject = {"fileName": ((tMatches2 && tMatches2[1]) ? tMatches2[1].toLowerCase() : null),
+							"line": ((tMatches && tMatches[1]) ? tMatches[1] : -1), 
+							"column": ((tMatches && tMatches[3]) ? tMatches[3] : -1)};
+				}
+
+				if((pError.message === 'CrxOop::start') && (gError_start === null))
+					{gError_start = tObject;}
+				else if((pError.message === 'CrxOop::end') && (gError_end === null))
+				{
+					gError_end = tObject;
+					gWereCodeBoundriesEvaluated = true;
+				}
+			}
+			else
+			{
+				setTimeout(function()
+				{
+					var vMessage = "" + pError.stack || pError.stacktrace;
+
+					if(vMessage.length > 0)
+					{
+						var tTrace = vMessage.split('\n');
+						
+						vMessage = "";
+
+						for(var tI = 0; tI < tTrace.length; tI++)
+						{
+							if(tTrace[tI] && (tTrace[tI].toLowerCase().indexOf("crxoop.") >= 0))
+								{continue;}
+							
+							var vIsToSkip = false;
+							var tMatches = tRegExp.exec(tTrace[tI]);
+							var tMatches2 = tRegExp2.exec(tTrace[tI]);
+
+							if(!gTraceKitReport_isToSkipErrorOutPut(((tMatches2 && tMatches2[1]) ? tMatches2[1] : null), 
+									((tMatches && tMatches[1]) ? tMatches[1] : null), 
+									((tMatches && tMatches[3]) ? tMatches[3] : null)))
+								{vMessage += tTrace[tI] + '\n';}
+						}
+
+						g_Func_log("\n" + pMessage + "\n" + "CrxOop: Stack Trace \n" + vMessage, 0);
+					}
+				}, 1);
+			}
+		}
+	}
+	
+	try{throw new Error('CrxOop::start');}catch(tE){gTraceKitReport(tE);}
+
+	function gTraceKitReport_isToSkipErrorOutPut(pFileName, pLine, pColumn)
+	{
+		var vReturn = false;
+
+		if(gError_start && gError_end)
+		{
+			if(pFileName)
+			{
+				if(gError_start.fileName === pFileName.toLowerCase())
+				{
+					if((gError_start.line !== -1) && (gError_end.line !== -1) && pLine)
+					{
+						if((pLine >= gError_start.line) && (pLine <= gError_end.line))
+						{
+							if((gError_start.line === gError_end.line) && (gError_start.column !== -1) && 
+									(gError_end.column !== -1) && pColumn)
+							{
+								if((pColumn >= gError_start.column) &&
+										(pColumn <= gError_end.column))
+									{vReturn = true;}
+							}
+							else
+								{vReturn = true;}
+						}
+					}
+					else
+						{vReturn = true;}
+				}
+			}
+		}
+		else if(pFileName)
+		{
+			if(pFileName.toLowerCase().indexOf("crxoop.") >= 0)
+				{vReturn = true;}
+		}
+
+		return vReturn;
+	}
+	
 	function registerClass(pClassName, pClassDefinition)
 	{
 		if(gIsHalted){return;}
@@ -189,7 +450,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		if(gClassSignatures.hasOwnProperty(pClassName) ||
 				gInterfaceSignatures.hasOwnProperty(pClassName) ||
 				gStructureSignatures.hasOwnProperty(pClassName))
-			{halt("Interface or Class or Structure with name '" + pClassName + "' already declared");}
+			{halt("Interface or Class or Structure with name '" + pClassName + "' already declared", -1);}
 
 		if(!pClassDefinition.CRX_CLASS_ID)
 		{
@@ -199,7 +460,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if((pClassDefinition.CRX_DEFINITION !== true) || (pClassDefinition.CRX_CLASS_ID !== pClassDefinition.CRX_CLASS_ID) ||
 					(pClassDefinition.CRX_CLASS_NAME !== pClassName) || (pClassDefinition.CRX_INTERFACE_ID !== undefined))
-				{halt("UNKNOWN ERROR IN DEFINITION OF CLASS '" + pClassName + "'");}
+				{halt("UNKNOWN ERROR IN DEFINITION OF CLASS '" + pClassName + "'", -1);}
 			gFunc_freezeObject(pClassDefinition);
 
 			inspectClassDefinition_processVerboseDefinition(pClassDefinition);
@@ -269,7 +530,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		if(gClassSignatures.hasOwnProperty(pInterfaceName) ||
 				gInterfaceSignatures.hasOwnProperty(pInterfaceName) ||
 				gStructureSignatures.hasOwnProperty(pInterfaceName))
-			{halt("Interface or Class or Structure with name '" + pInterfaceName + "' already declared");}
+			{halt("Interface or Class or Structure with name '" + pInterfaceName + "' already declared", -1);}
 
 		if(!pInterface.CRX_INTERFACE_ID)
 		{
@@ -280,7 +541,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			if((pInterface.CRX_DEFINITION !== true) || (pInterface.CRX_INTERFACE_ID !== gInterfaceIDCounter) ||
 					(pInterface.CRX_INTERFACE_NAME !== pInterfaceName) ||
 					(pInterface.CRX_CLASS_ID !== undefined))
-				{halt("UNKNOWN ERROR IN DEFINITION OF INTERFACE '" + pInterfaceName + "'");}
+				{halt("UNKNOWN ERROR IN DEFINITION OF INTERFACE '" + pInterfaceName + "'", -1);}
 			gFunc_freezeObject(pInterface);
 
 			gInterfaceDefinitions[gInterfaceIDCounter] = pInterface;
@@ -312,7 +573,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 				if((pInterfaceOrInterfaceName.CRX_DEFINITION !== true) ||
 						(pInterfaceOrInterfaceName.CRX_INTERFACE_ID !== gInterfaceIDCounter))
-					{halt("UNKNOWN ERROR IN DEFINITION OF INTERFACE '$I" + gInterfaceIDCounter + "'");}
+					{halt("UNKNOWN ERROR IN DEFINITION OF INTERFACE '$I" + gInterfaceIDCounter + "'", -1);}
 				gFunc_freezeObject(pInterfaceOrInterfaceName);
 
 				gInterfaceDefinitions[gInterfaceIDCounter] = pInterfaceOrInterfaceName;
@@ -348,7 +609,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		if(gClassSignatures.hasOwnProperty(pStructureName) ||
 				gInterfaceSignatures.hasOwnProperty(pStructureName) ||
 				gStructureSignatures.hasOwnProperty(pStructureName))
-			{halt("Interface or Class or Structure with name '" + pStructureName + "' already declared");}
+			{halt("Interface or Class or Structure with name '" + pStructureName + "' already declared", -1);}
 
 		if(!pStructure.CRX_STRUCTURE_ID)
 		{
@@ -360,7 +621,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					(pStructure.CRX_STRUCTURE_NAME !== pStructureName) ||
 					(pStructure.CRX_CLASS_ID !== undefined) ||
 					(pStructure.CRX_INTERFACE_ID !== undefined))
-				{halt("UNKNOWN ERROR IN DEFINITION OF STRUCTRE '" + pStructureName + "'");}
+				{halt("UNKNOWN ERROR IN DEFINITION OF STRUCTRE '" + pStructureName + "'", -1);}
 			gFunc_freezeObject(pStructure);
 
 			gStructureDefinitions[gStructureIDCounter] = pStructure;
@@ -484,7 +745,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 
 		if((vClass === null) && (vStructure === null))
-			{halt("UNABLE TO RESOLVE CLASS/STRUCTURE \"" + vClassOrStructureDefinitionOrNameFromParameters + "\"DURING CALL TO crx_new");}
+			{halt("UNABLE TO RESOLVE CLASS/STRUCTURE \"" + vClassOrStructureDefinitionOrNameFromParameters + "\"DURING CALL TO crx_new", -1);}
 
 		if(vStructure === null)
 		{
@@ -512,13 +773,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					tRestOfMessage += (tIsNotFirst ? ", \"" : "\"") + tKey + "()\"";
 					tIsNotFirst = true;
 				}
-				halt("CAN NOT CREATE INSTANCE OF ABSTRACT CLASS \"" + getClassNameOrID(vClass) + "\". MISSING IMPLEMENTATIONS FOR FUNCTIONS " + tRestOfMessage);
+				halt("CAN NOT CREATE INSTANCE OF ABSTRACT CLASS \"" + getClassNameOrID(vClass) + "\". MISSING IMPLEMENTATIONS FOR FUNCTIONS " + tRestOfMessage, -1);
 			}
 
 			vObjects = _new_build(gCompiledClasses[vClass.CRX_CLASS_ID], tCRX_CLASS_INFOs, /*{p: false},*/ vLength);
 
 			if(vObjects.length === 0)
-				{halt("UNKNOWN ERROR DURING CALL TO crx_new");}
+				{halt("UNKNOWN ERROR DURING CALL TO crx_new", -1);}
 
 			for(var tKey in gClassVTables[vClass.CRX_CLASS_ID])
 			{
@@ -580,7 +841,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					}
 				}
 				catch(tE)
-					{halt('CONSTRUCTION OF CLASS \"' + getClassNameOrID(vClass) + '\" THREW AN EXCEPTION: ' + tE);}
+					{halt('CONSTRUCTION OF CLASS \"' + getClassNameOrID(vClass) + '\" THREW AN EXCEPTION: ' + tE, tE);}
 			}
 
 			for(tI = 0; tI < vLength; tI++)
@@ -621,7 +882,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			vObjects = _new_buildStructure(gCompiledStructures[vStructure.CRX_STRUCTURE_ID], tCRX_STRUCTURE_INFOs, vLength);
 
 			if(vObjects.length === 0)
-				{halt("UNKNOWN ERROR DURING CALL TO crx_new");}
+				{halt("UNKNOWN ERROR DURING CALL TO crx_new", -1);}
 
 			if(gCompiledStructures[vStructure.CRX_STRUCTURE_ID].PUBLIC && gCompiledStructures[vStructure.CRX_STRUCTURE_ID].PUBLIC_CONSTRUCT)
 			{
@@ -670,7 +931,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					}
 				}
 				catch(tE)
-					{halt('CONSTRUCTION OF STRUCTURE \"' + getStructureNameOrID(vStructure) + '\" THREW AN EXCEPTION: ' + tE);}
+					{halt('CONSTRUCTION OF STRUCTURE \"' + getStructureNameOrID(vStructure) + '\" THREW AN EXCEPTION: ' + tE, tE);}
 			}
 
 			if(gIS_STRICT_MODE)
@@ -1144,7 +1405,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if(vCallerThis !== null)
 			{
-				var tIsFound = null;
+				/*var tIsFound = null;
 
 				for(var tKey in vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS)
 				{
@@ -1155,10 +1416,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						{tIsFound = true;}
 					if(tIsFound && (tKey == vClassID))
 						{return vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[pClassID];}
-				}
+				}*/
+				if(gCompiledClasses[pClassID].DEPTH <= gCompiledClasses[vClassID].DEPTH)
+					{return vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[pClassID];}
 			}
 		}
-		halt("ILLEGAL ACCESS TO PROTECTED METHOD '" + getClassNameOrID(gClassDefinitions[pClassID]) + "::" + pKey + "()'");
+		halt("ILLEGAL ACCESS TO PROTECTED METHOD '" + getClassNameOrID(gClassDefinitions[pClassID]) + "::" + pKey + "()'", -1);
 	}
 	function ftable_this_call__virtual(pClassID, pFTableIndex, pKey/*, pFunction*/)
 	{
@@ -1205,7 +1468,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if(!((vClassID2 === vClassID) && ((vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] === pCallerThis) ||
 					(!gIS_STRICT_JS && isCallerFromClassOrAFriend(pCaller, vClassID, true)))))
-				{halt("ILLEGAL ACCESS TO PRIVATE VIRTUAL METHOD '" + getClassNameOrID(gClassDefinitions[vClassID2]) + "::" + pKey + "()'");}
+				{halt("ILLEGAL ACCESS TO PRIVATE VIRTUAL METHOD '" + getClassNameOrID(gClassDefinitions[vClassID2]) + "::" + pKey + "()'", -1);}
 		}
 		else if(gClassMemberScopes[vClassID2][pKey] === SCOPE_PROTECTED)
 		{
@@ -1226,10 +1489,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					if(tIsFound && (tKey == vClassID))
 						{tIsInValid = false;}
 				}*/
-				tIsInValid = false;
+				if(gCompiledClasses[vClassID2].DEPTH <= gCompiledClasses[vClassID].DEPTH)
+					{tIsInValid = false;}
 			}
 			if(tIsInValid)
-				{halt("ILLEGAL ACCESS TO PROTECTED VIRTUAL METHOD '" + getClassNameOrID(gClassDefinitions[vClassID2]) + "::" + pKey + "()'");}
+				{halt("ILLEGAL ACCESS TO PROTECTED VIRTUAL METHOD '" + getClassNameOrID(gClassDefinitions[vClassID2]) + "::" + pKey + "()'", -1);}
 		}
 
 		return vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[gClassVTables_lastOccurances[pClassID][pKey]];
@@ -1271,7 +1535,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 		}
 		//else if(pThis !== pPrivateThis)
-		else if(pThis !== vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[pClassID])
+		else if((pThis !== vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[pClassID]) &&
+				vClassInfoObject.CRX_OBJECT_SEGMENTS[pClassID].PARENT &&
+				pKey in vClassInfoObject.CRX_OBJECT_SEGMENTS[pClassID].PARENT)
 		{
 			//var tObject = pPublicThis.PARENT;
 			var tObject = vClassInfoObject.CRX_OBJECT_SEGMENTS[pClassID].PARENT;
@@ -1286,6 +1552,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 								gClassMemberTypes[tObject.CRX_CLASS_ID].VARS[pKey])
 							{return tObject[pKey];}
 					}
+					else if(tObject.PARENT && !(pKey in tObject.PARENT))
+						{break;}
 
 					tObject = tObject.PARENT;
 				}
@@ -1402,6 +1670,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 								gClassMemberTypes[tObject.CRX_CLASS_ID].VARS[pKey])
 							{tObject[pKey] = pValue;}
 					}
+					else if(tObject.PARENT && !(pKey in tObject.PARENT))
+						{break;}
 
 					tObject = tObject.PARENT;
 				}
@@ -1430,7 +1700,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		else if(vReturn.CRX_IS_ANNULED && !pIsToNotCheckForAnnuls)
 		{
 			if(pObject.CRX_CLASS_ID)
-				{halt('INSTANCE OF CLASS "' + getClassNameOrID(gClassDefinitions[pObject.CRX_CLASS_ID]) + '" IS ANNUL');}
+				{halt('INSTANCE OF CLASS "' + getClassNameOrID(gClassDefinitions[pObject.CRX_CLASS_ID]) + '" IS ANNUL', -1);}
 			halt('UNKNOWN ERROR');
 		}
 
@@ -1935,8 +2205,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					{parseClass_statics(pClassNameOrID, pErrors, 'PUBLIC STATIC', pClassStructure['STATIC'], pVirtuals, pNonVirtuals, pMembers);}
 				else if(tKey === "CONSTRUCT")
 				{
-					isInvalidFunction(pErrors, pClassNameOrID, "PUBLIC", tKey,
-							pClassStructure[tKey], false);
+					((pClassStructure[tKey] === 1) || isInvalidFunction(pErrors, pClassNameOrID, "PUBLIC", tKey,
+							pClassStructure[tKey], false));
 				}
 				else if(tKey === "VIRTUAL")
 				{
@@ -2351,7 +2621,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			PUBLIC: null,
 			PRIVATE: null,
 			PROTECTED: null,
-			DIRECTIVE_NO_PUBLIC_VARS_DELEGATION: false
+			DIRECTIVE_NO_PUBLIC_VARS_DELEGATION: false,
+			DEPTH: 1
 		};
 		var tKey = null;
 		var vClassMemberScopes = {};
@@ -2371,7 +2642,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 		}
 		if(pClass.hasOwnProperty("EXTENDS"))
-			{vCompiledClass.EXTENDS = gCompiledClasses[getClassID(pClass["EXTENDS"])];}
+		{
+			vCompiledClass.EXTENDS = gCompiledClasses[getClassID(pClass["EXTENDS"])];
+			vCompiledClass.DEPTH = vCompiledClass.EXTENDS.DEPTH + 1;
+		}
 		if(pClass.hasOwnProperty("IMPLEMENTS"))
 			{vCompiledClass.IMPLEMENTS = pClass["IMPLEMENTS"];}
 		if(pClass.hasOwnProperty("PUBLIC"))
@@ -2471,7 +2745,21 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						{vCompiledClass.PUBLIC_VIRTUAL = true;}
 			}
 			if(pClass["PUBLIC"].hasOwnProperty("CONSTRUCT"))
-				{vCompiledClass.PUBLIC_CONSTRUCT = pClass["PUBLIC"]["CONSTRUCT"];}
+			{
+				if(pClass["PUBLIC"]["CONSTRUCT"] === 1)
+				{
+					if(vCompiledClass.EXTENDS)
+					{
+						vCompiledClass.PUBLIC_CONSTRUCT = function()
+						{
+							if(this.PARENT.CONSTRUCT)
+								{this.PARENT.CONSTRUCT.apply(this.PARENT, arguments);}
+						};
+					}
+				}
+				else
+					{vCompiledClass.PUBLIC_CONSTRUCT = pClass["PUBLIC"]["CONSTRUCT"];}
+			}
 			if((vCompiledClass.PUBLIC_VARS.length > 0) || (vCompiledClass.PUBLIC_FUNCTIONS.length > 0) ||
 					(vCompiledClass.PUBLIC_VIRTUAL) || (vCompiledClass.PUBLIC_CONSTRUCT))
 				{vCompiledClass.PUBLIC = true;}
@@ -2893,12 +3181,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 
 		if(!vClassID)
-			{halt('UNDECLARED CLASS "??' + pClassDefinitionOrClassName + '??"');}
+			{halt('UNDECLARED CLASS "??' + pClassDefinitionOrClassName + '??"', -1);}
 		if(!vObject)
 		{
 			halt('CAN NOT RESOLVE MEMBER "' + pMemberName + '" ON CLASS "' +
 					getClassNameOrID(gClassDefinitions[vClassID]) + '". INSTANCE CAN NOT BE CASTED TO "' +
-					getClassNameOrID(gClassDefinitions[vClassID]) + '"');
+					getClassNameOrID(gClassDefinitions[vClassID]) + '"', -1);
 		}
 
 		if(getObjectClassIDFast(this) === vClassID)
@@ -2963,6 +3251,40 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 					while(tObject !== null)
 					{
+						tClassID = gClassVTables_lastOccurances[getObjectClassIDFast(tObject)][pMemberName] || null;
+
+						if(gClassMemberTypes[tClassID].FUNCTIONS[pMemberName]) //SHOULD ALWAYS EQUAL 2 OR 3
+						{
+							if((gClassMemberScopes[tClassID][pMemberName] === SCOPE_PROTECTED) || 
+									(gClassMemberScopes[tClassID][pMemberName] === SCOPE_PUBLIC))
+							{
+								if(gClassMemberScopes[tClassID][pMemberName] === SCOPE_PROTECTED)
+									{tIsFunctionProtected = true;}
+
+								if(gClassMemberTypes[tClassID].FUNCTIONS[pMemberName] === 2)
+								{
+									if(tClassID == vClassID)
+									{
+										if(!tIsFunctionProtected || (tIsCallerAllowedProtectedAccess))
+										{
+											return ftable_this_call__virtual(vClassID, "puv", pMemberName).
+													apply(tClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID],
+													Array.prototype.slice.call(arguments, 2));
+										}
+										else
+											{break;}
+									}
+								}
+							}
+							else
+								{break;}
+						}
+						//tObject = (tClassInfoObject.CRX_OBJECT_SEGMENTS[tClassID] ? tClassInfoObject.CRX_OBJECT_SEGMENTS[tClassID].PARENT : null);
+						tObject = tObject.PARENT;
+					}
+
+					/*while(tObject !== null)
+					{
 						tClassID = getObjectClassIDFast(tObject);
 
 						if(gClassMemberTypes[tClassID].FUNCTIONS[pMemberName]) //SHOULD ALWAYS EQUAL 2 OR 3
@@ -2993,12 +3315,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 								{break;}
 						}
 						tObject = tObject.PARENT;
-					}
+					}*/
 				}
 			}
 		}
 
-		halt('ILLEGAL ACCESS TO, OR UNKNOWN, MEMBER "' + pMemberName + '" IN CLASS "' + getClassNameOrID(gClassDefinitions[vClassID]) + '"');
+		halt('ILLEGAL ACCESS TO, OR UNKNOWN, MEMBER "' + pMemberName + '" IN CLASS "' + getClassNameOrID(gClassDefinitions[vClassID]) + '"', -1);
 	}
 	function _this(pPrivateThis)
 	{
@@ -3032,7 +3354,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						else
 						{
 							halt('ERROR USING \'O\'. CLASS "' + getClassNameOrID(gClassDefinitions[vClassID]) + '" IS NOT BE FRIENDED ' + 
-									'BY CLASS "' + getClassNameOrID(gClassDefinitions[tClassID]) + '"');
+									'BY CLASS "' + getClassNameOrID(gClassDefinitions[tClassID]) + '"', -1);
 						}
 					}
 					else
@@ -3203,9 +3525,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		var vCompiledClass = null;
 
 		if(vClass1 === null)
-			{halt('UNDECLARED CLASS "??' + pClassDefinitionOrClassName1 + '??"');}
+			{halt('UNDECLARED CLASS "??' + pClassDefinitionOrClassName1 + '??"', -1);}
 		else if(vClass2 === null)
-			{halt('UNDECLARED CLASS "??' + pClassDefinitionOrClassName2 + '??"');}
+			{halt('UNDECLARED CLASS "??' + pClassDefinitionOrClassName2 + '??"', -1);}
 		prepareClass(vClass1);
 		prepareClass(vClass2);
 		
@@ -3233,7 +3555,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		var vInterface = getInterface(pInterfaceOrInterfaceName);
 		
 		if(vInterface === null)
-			{halt('UNDECLARED INTERFACE "??' + pInterfaceOrInterfaceName + '??"');}
+			{halt('UNDECLARED INTERFACE "??' + pInterfaceOrInterfaceName + '??"', -1);}
 		
 		prepareClass(vClass);
 
@@ -4276,12 +4598,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 
 		if(!vStructureID)
-			{halt('UNDECLARED STRUCTURE "??' + pStructureDefinitionOrStructureName + '??"');}
+			{halt('UNDECLARED STRUCTURE "??' + pStructureDefinitionOrStructureName + '??"', -1);}
 		if(!vObject)
 		{
 			halt('CAN NOT RESOLVE MEMBER "' + pMemberName + '" ON STRUCTURE "' +
 					getStructureNameOrID(gStructureDefinitions[vStructureID]) + '". INSTANCE NOT A SUPER SET OF STRUCTURE "' +
-					getStructureNameOrID(gStructureDefinitions[vStructureID]) + '"');
+					getStructureNameOrID(gStructureDefinitions[vStructureID]) + '"', -1);
 		}
 
 		//vClassInfoObject_caller = getStructureInfoObject(this);
@@ -4309,7 +4631,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 		}
 
-		halt('ILLEGAL ACCESS TO, OR UNKNOWN, MEMBER "' + pMemberName + '" IN STRUCTURE "' + getStructureNameOrID(gStructureDefinitions[vStructureID]) + '"');
+		halt('ILLEGAL ACCESS TO, OR UNKNOWN, MEMBER "' + pMemberName + '" IN STRUCTURE "' +
+				getStructureNameOrID(gStructureDefinitions[vStructureID]) + '"', -1);
 	}
 	
 	function _structureConstruct(pStructureDefinitionOrStructureName)
@@ -4343,11 +4666,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{
 					halt('CALL TO "' + getStructureNameOrID(gStructureDefinitions[tStructureID]) + '::CONSTRUCT" IN "' +
 							getStructureNameOrID(gStructureDefinitions[vStructureID]) + 
-							'::CONSTRUCT" CAN NOT BE RESOLVED');
+							'::CONSTRUCT" CAN NOT BE RESOLVED', -1);
 				}
 			}
 			else
-				{halt('UNREGISTERED STRUCTURE "' + pStructureDefinitionOrStructureName + '"');}
+				{halt('UNREGISTERED STRUCTURE "' + pStructureDefinitionOrStructureName + '"', -1);}
 		}
 		else
 			{halt('UNKNOWN ERROR IN CONSTRUCTOR CALL');}
@@ -4362,9 +4685,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		var vCompiledStructure = null;
 
 		if(vStructure1 === null)
-			{halt('UNDECLARED STRUCTURE "??' + pStructureDefinitionOrStructureName1 + '??"');}
+			{halt('UNDECLARED STRUCTURE "??' + pStructureDefinitionOrStructureName1 + '??"', -1);}
 		else if(vStructure2 === null)
-			{halt('UNDECLARED STRUCTURE "??' + pStructureDefinitionOrStructureName2 + '??"');}
+			{halt('UNDECLARED STRUCTURE "??' + pStructureDefinitionOrStructureName2 + '??"', -1);}
 		prepareStructure(vStructure1);
 		prepareStructure(vStructure2);
 		
@@ -4556,7 +4879,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				pObject[pFunctionName])
 			{halt("Security Error, object's public method was overriden");return false;}
 	}
-	function halt(pErrorMessage)
+	function halt(pErrorMessage, pError)
 	{
 		if(!gIsHalted)
 		{
@@ -4581,9 +4904,27 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			gIsHalted = true;
 			gHaltMessage = pErrorMessage;
 		}
-
+		
 		if(!gIsRunningTestCasesMode)
 			{gFunc_log("CrxOop FATAL ERROR:: " + gHaltMessage, 0);}
+
+		if(/*true ||*/ !gIsRunningTestCasesMode)
+		{
+			if(pError)
+			{
+				if(pError === -1)
+				{
+					try
+					{
+						throw new Error("CrxOop FATAL ERROR:: " + gHaltMessage);
+					}
+					catch(tE)
+						{gTraceKitReport(tE, "CrxOop FATAL ERROR:: " + gHaltMessage);}
+				}
+				else
+					{gTraceKitReport(pError, "CrxOop FATAL ERROR:: " + gHaltMessage);}
+			}
+		}
 
 		throw "CrxOop FATAL ERROR:: " + gHaltMessage;
 	}
@@ -4901,8 +5242,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	setObjectReadOnlyMember(crxOop, "bindFunction", crxOop_bind);
 	setObjectReadOnlyMember(crxOop, "setTimeout", crxOop_setTimeout);
 	setObjectReadOnlyMember(crxOop, "setInterval", crxOop_setInterval);
+	setObjectReadOnlyMember(crxOop, "nativeTypeOf", getType);
 	setObjectReadOnlyMember(crxOop, "setRunningTestCasesMode", function(pIsRunningTestCases){if(gIsStarted){return;}if(pIsRunningTestCases){gIsRunningTestCasesMode = true;}});
 	setObjectReadOnlyMember(crxOop, "unHalt", function(pMessage){if(gIsRunningTestCasesMode){if(!gIsHalted){halt("UNHALTING WHEN NOT HALTED: " + pMessage);} gIsHalted = false;}});
 	
 	/*window.crxOop_halt = halt;*/
+
+	try{throw new Error('CrxOop::end');}catch(tE){gTraceKitReport(tE);}
 })();
