@@ -33,4 +33,4 @@ Supported Features (POBP):
 - Iteration using the native javascript built "for in" loop mechanism. CrxOop provides HASOWN(), an equivalent to the built in hasOwnProperty().
 
 
-For details and documentation refer to http://creatrix.ca/crxoop
+For details and documentation refer to http://EyeAndTea.com
