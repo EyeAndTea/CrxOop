@@ -1,4 +1,4 @@
-//version: 1.6
+//version: 2.6.2
 /*
 The MIT License (MIT) 
 
@@ -29,13 +29,17 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 {
 	"use strict";
 
-	if(window.crx_registerClass)
+	var gIS_BROWSER = ((typeof(window) !== 'undefined') && (typeof(window.document) !== 'undefined'));
+	var gCrxOop = null;
+	var gWindow = null;
+
+	if(resolveCrxOopInclusionAndReturnIsAlreadyIncluded())
 		{return;}
 
 	var gIS_STRICT_MODE = true;
 	var gIS_STRICT_JS_SUPPORTED = (function(){"use strict"; return !this;})();
 	var gIS_STRICT_JS = (gIS_STRICT_JS_SUPPORTED ? (function(){return !this;})() :
-			(window.CRXNS_NON_STRICT_MODE ? false : true));
+			((gWindow && gWindow.CRXNS_NON_STRICT_MODE) ? false : true));
 	var gCODE_KEY = function(){};
 	var SCOPE_PRIVATE = 1;
 	var SCOPE_SHARED_PRIVATE = 2;
@@ -51,6 +55,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	var HASOWN_SCOPE_SHARED_PRIVATE = 16;
 	var HASOWN_SCOPE_PRIVATE = 32;
 	var DIRECTIVE_NO_PUBLIC_VARS_WRITE_DELEGATION = 1;
+	var gIS_USING_NEW_STATIC_SYNTAX = true;
 	//var MEMBER_TYPE_VIRTUAL_FUNCTION = 3;
 	//var MEMBER_TYPE_PURE_VIRTUAL_FUNCTION = 4;
 	var gSecureClassData_return = null;
@@ -81,6 +86,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	var gClassMemberTypes = {};
 	var gClassPublicStatics = {};
 	var gClassPrivateStatics = {};
+	var gClassStaticThis = {};
 	var gAreConstantsToBeCopiedToObjects = false;
 	var gCheckedClassDefinitions = {};
 	var gCheckedClassAdherenceToInterfaces = {};
@@ -106,7 +112,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	var gStructurePrototypes = {};
 //STRUCTURES: END
 	var gFunc_log = function(pMessage, pLevel){g_Func_log("CrxOop ==> " + pMessage, pLevel);};
-	var g_Func_log = function(pMessage, pLevel){if(window.console){window.console.log(pMessage);}};
+	var g_Func_log = function(pMessage, pLevel)
+	{
+		var vWindow = (gWindow || global);
+
+		if(vWindow && vWindow.console && vWindow.console.log)
+			{vWindow.console.log(pMessage);}
+	};
 	var gNamesOfTypes =
 	{
 		"[object Boolean]": "boolean",
@@ -132,6 +144,46 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	var gError_end = null;
 	var gWereCodeBoundriesEvaluated = false;
 
+
+	function resolveCrxOopInclusionAndReturnIsAlreadyIncluded()
+	{
+		var vReturn = false;
+
+		if(gIS_BROWSER)
+		{
+			if(window.crx_registerClass)
+				{vReturn = true;}
+			else
+			{
+				gCrxOop = {};
+				gWindow = window;
+			}
+		}
+		else
+		{
+			var tSymbol = Symbol['for']("225e78bc-206d-4319-aff0-68bb2796b931");
+			var tGlobalSymbols = Object.getOwnPropertySymbols(global);
+
+			if(tGlobalSymbols.indexOf(tSymbol) > -1)
+			{
+				vReturn = true;
+				module.exports = global[tSymbol];
+			}
+			else
+			{
+				gCrxOop = {};
+				global[tSymbol] = gCrxOop;
+				module.exports = gCrxOop;
+
+				if(typeof(global['window']) !== 'undefined')
+					{gWindow = global.window;}
+			}
+		}
+
+		return vReturn;
+	}
+	
+	
 	if(!Object.create)
 	{
 		gFunc_createObject = function(vPrototype)
@@ -172,7 +224,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		_eTest();
 	}
 	
-	if(!gIsReadOnlyWriteSupported && !gIS_STRICT_JS)
+	if(!gIsReadOnlyWriteSupported && !gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX)
 		{halt('CURRENT BROWSER IS NOT SUPPORTED IN NON STRICT MODE');}
 
 	if(gIS_STRICT_MODE && !gIsReadOnlyWriteSupported)
@@ -186,7 +238,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				(gNamesOfTypes[Object.prototype.toString.call(pObject)] || "object") : (typeof(pObject)));
 	}
 	
-	if(window.TraceKit && window.TraceKit.report && window.TraceKit.report.subscribe)
+	if(gIS_BROWSER && window.TraceKit && window.TraceKit.report && window.TraceKit.report.subscribe)
 	{		
 		gStackKitHandler = function(pError)
 		{
@@ -265,7 +317,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				//{return pString;}*/
 		};
 	}
-	else if(window.StackTrace && window.StackTrace.get && window.StackTrace.fromError)
+	else if(gIS_BROWSER && window.StackTrace && window.StackTrace.get && window.StackTrace.fromError)
 	{
 		gTraceKitReport = function(pError, pMessage)
 		{
@@ -368,40 +420,53 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 			else
 			{
-				setTimeout(function()
+				if(gIS_BROWSER)
 				{
-					var vMessage = "" + pError.stack || pError.stacktrace;
-
-					if(vMessage.length > 0)
+					setTimeout(function()
 					{
-						var tTrace = vMessage.split('\n');
-						
-						vMessage = "";
-
-						for(var tI = 0; tI < tTrace.length; tI++)
-						{
-							if(tTrace[tI] && (tTrace[tI].toLowerCase().indexOf("crxoop.") >= 0))
-								{continue;}
-							
-							var vIsToSkip = false;
-							var tMatches = tRegExp.exec(tTrace[tI]);
-							var tMatches2 = tRegExp2.exec(tTrace[tI]);
-
-							if(!gTraceKitReport_isToSkipErrorOutPut(((tMatches2 && tMatches2[1]) ? tMatches2[1] : null), 
-									((tMatches && tMatches[1]) ? tMatches[1] : null), 
-									((tMatches && tMatches[3]) ? tMatches[3] : null)))
-								{vMessage += tTrace[tI] + '\n';}
-						}
-
-						g_Func_log("\n" + pMessage + "\n" + "CrxOop: Stack Trace \n" + vMessage, 0);
-					}
-				}, 1);
+						gTraceKitReport_produceMessage(pError, pMessage, tRegExp, tRegExp2);
+					}, 1);
+				}
+				else
+					{return gTraceKitReport_produceMessage(pError, pMessage, tRegExp, tRegExp2);}
 			}
 		}
 	}
 	
 	try{throw new Error('CrxOop::start');}catch(tE){gTraceKitReport(tE);}
 
+	function gTraceKitReport_produceMessage(pError, pMessage, pRegExp, pRegExp2)
+	{
+		var vMessage = "" + (pError.stack || pError.stacktrace || "");
+
+		if(vMessage.length > 0)
+		{
+			var tTrace = vMessage.split('\n');
+			
+			vMessage = "";
+
+			for(var tI = 0; tI < tTrace.length; tI++)
+			{
+				if(tTrace[tI] && (tTrace[tI].toLowerCase().indexOf("crxoop.") >= 0))
+					{continue;}
+				
+				var vIsToSkip = false;
+				var tMatches = pRegExp.exec(tTrace[tI]);
+				var tMatches2 = pRegExp2.exec(tTrace[tI]);
+
+				if(!gTraceKitReport_isToSkipErrorOutPut(((tMatches2 && tMatches2[1]) ? tMatches2[1] : null), 
+						((tMatches && tMatches[1]) ? tMatches[1] : null), 
+						((tMatches && tMatches[3]) ? tMatches[3] : null)))
+					{vMessage += tTrace[tI] + '\n';}
+			}
+
+			g_Func_log("\n" + pMessage + "\n" + "CrxOop: Stack Trace \n" + vMessage, 0);
+
+			return "\n" + pMessage + "\n" + "CrxOop: Stack Trace \n" + vMessage;
+		}
+		else
+			{return "\n" + pMessage + "\n";}
+	}
 	function gTraceKitReport_isToSkipErrorOutPut(pFileName, pLine, pColumn)
 	{
 		var vReturn = false;
@@ -994,6 +1059,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 			setObjectsReadOnlyMember(vObjects, "CAST", _cast);
 			setObjectsReadOnlyMember(vObjects, "SR", _sr);
+			//setObjectsReadOnlyMember(vObjects, "C", _class);
 			
 			for(tI = 0; tI < pLength; tI++)
 				{vObjects[tI] = gFunc_createObject(vObjects[tI]);}
@@ -1036,7 +1102,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 					setObjectsMember(vObjects_privates, pCompiledClass.PRIVATE_VARS[tI][0], pCompiledClass.PRIVATE_VARS[tI][1]);
 
-					if(!gIS_STRICT_JS)
+					if(!gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX)
 					{
 						_new_build.o1.get = pCompiledClass.PRIVATE_VARS[tI][2];
 						_new_build.o1.set = pCompiledClass.PRIVATE_VARS[tI][3];
@@ -1051,7 +1117,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							ftable_this_call(pCompiledClass.CRX_CLASS_ID, 'pr', pCompiledClass.PRIVATE_FUNCTIONS[tI][0],
 							pCompiledClass.PRIVATE_FUNCTIONS[tI][1], false));
 
-					if(!gIS_STRICT_JS)
+					if(!gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX)
 					{
 						_new_build.o3.get = pCompiledClass.PRIVATE_FUNCTIONS[tI][2];
 						_new_build.o3.set = pCompiledClass.PRIVATE_FUNCTIONS[tI][3];
@@ -1368,7 +1434,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						if(gIsHalted){return;}
 						
 						return pFunction.apply(ftable_this_call__checkAccessToProtectedIsValidAndGetThis(this, pClassID, pKey,
-								(gIS_STRICT_JS ? null : gClassFTables[pClassID][pFTableIndex][pKey].caller)), arguments);
+								((gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX) ? null : gClassFTables[pClassID][pFTableIndex][pKey].caller)), 
+								arguments);
 					}
 				})(pClassID, pFunction);
 			}
@@ -1399,7 +1466,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if(vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] === pCallerThis)
 				{vCallerThis = pCallerThis;}
-			else if(!gIS_STRICT_JS && (vClassInfoObject.CRX_OBJECT_SEGMENTS[vClassID] === pCallerThis) &&
+			else if(!gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX && (vClassInfoObject.CRX_OBJECT_SEGMENTS[vClassID] === pCallerThis) &&
 					isCallerFromClassOrAFriend(pCaller, vClassID, true))
 				{vCallerThis = vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID];}
 
@@ -1442,7 +1509,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 					return /*pFunction*/gClassVTables[pClassID][pKey].apply(
 							ftable_this_call__virtual__checkAccessToProtectedIsValidAndGetThis(this, pClassID, pKey,
-							(gIS_STRICT_JS ? null : gClassFTables[pClassID][pFTableIndex][pKey].caller)), arguments);
+							((gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX) ? null : gClassFTables[pClassID][pFTableIndex][pKey].caller)),
+							arguments);
 				}
 			})(pClassID, pKey/*, pFunction*/);
 		}
@@ -1467,7 +1535,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			var tIsInValid = true;
 
 			if(!((vClassID2 === vClassID) && ((vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] === pCallerThis) ||
-					(!gIS_STRICT_JS && isCallerFromClassOrAFriend(pCaller, vClassID, true)))))
+					(!gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX && isCallerFromClassOrAFriend(pCaller, vClassID, true)))))
 				{halt("ILLEGAL ACCESS TO PRIVATE VIRTUAL METHOD '" + getClassNameOrID(gClassDefinitions[vClassID2]) + "::" + pKey + "()'", -1);}
 		}
 		else if(gClassMemberScopes[vClassID2][pKey] === SCOPE_PROTECTED)
@@ -1475,7 +1543,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			var tIsInValid = true;
 
 			if((vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] === pCallerThis) ||
-					(!gIS_STRICT_JS && isCallerFromClassOrAFriend(pCaller, vClassID, true)))
+					(!gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX && isCallerFromClassOrAFriend(pCaller, vClassID, true)))
 			{
 				/*var tIsFound = false;
 
@@ -1566,8 +1634,18 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		else
 			{return undefined;}
 	}
-	function static_call(pClassID, pFunction)
+	function static_call(pClassID, pFunction) //THIS ALSO SUPPORTS NEW STATIC SYNTAX
 	{
+		if(gIS_USING_NEW_STATIC_SYNTAX)
+		{
+			return function()
+			{
+				if(gIsHalted){return;}
+				//return pFunction.apply(gClassPrivateStatics[pClassID], arguments);
+				return pFunction.apply(gClassStaticThis[pClassID], arguments);
+			}
+		}
+
 		var vCurrentStaticContext = [null, null]
 		var vFunction = function()
 		{
@@ -1607,7 +1685,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	}
 	function setMemberPrivateCapture(pClassID, /*pPrivateThis, pPublicThis, */pKey)
 	{
-		if(gIS_STRICT_JS)
+		if(gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX)
 			{return;}
 
 		/*function vFunction()
@@ -1718,6 +1796,19 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	}
 	function getObjectClassIDFast(pObject)//INSECURE
 		{return (pObject.CRX_CLASS_ID ? pObject.CRX_CLASS_ID : null);}
+	function getStaticObjectID(pStaticObject)
+	{
+		var vReturn = null;
+
+		pStaticObject.CRX_STATIC_INFO();
+		vReturn = gSecureClassData_return;
+		gSecureClassData_return = null;
+
+		if(vReturn === null)
+			{halt('SECURITY ERROR, ACCESS VIOLATION');}
+
+		return vReturn.CRX_CLASS_ID;
+	}
 	
 	function prepareClass(pClassDefinition)
 	{
@@ -2438,7 +2529,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{parseClass_vars(pClassNameOrID, pErrors, pScope + ' VARS', pClassStructure['VARS'], pVirtuals, pMembers);}
 			else if(tKey === "FUNCTIONS")
 			{
-				if(gIS_STRICT_JS)
+				if(gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX)
 				{
 					pErrors.push(pClassNameOrID + "::" + tKey + "=>" + '"' + pScope + " " + 
 							'FUNCTIONS" IS NOT ALLOWED; RUNNING IN STRICT JS MODE OR STATIC FUNCTIONS CAN NOT ' +
@@ -2592,7 +2683,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			"CRX_CLASS_ID": true , "O": true, "CRX_DEFINITION": true, "FINAL": true, "CONST": true,
 			"CONSTS": true, "CRX_INTERFACE_ID": true, "CRX_STRUCTURE_ID": true, "CRX_STRUCTURE_ID_PV": true,
 			"CRX_CLASS_NAME": true, "CRX_STRUCTURE_NAME": true, 'CRX_STRUCTURE_INFO': true, "HASOWN": true,
-			"FRIENDS": true, "CRX_FUNCTION_ID": true};
+			"FRIENDS": true, "CRX_FUNCTION_ID": true, "CRX_STATIC_INFO": true};
 	function isInvalidFunction(pErrors, pClassNameOrID, pSectionName, pMemberName, pMember, pIsVirtual)
 	{
 		if((typeof(pMember) !== 'function') && (!pIsVirtual || (pMember !== 0)))
@@ -2786,7 +2877,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{
 					if(pClass["PRIVATE"]["VARS"].hasOwnProperty(tKey))
 					{
-						if(gIS_STRICT_JS)
+						if(gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX)
 							{vCompiledClass.PRIVATE_VARS.push([tKey, crxOop_var(pClass["PRIVATE"]["VARS"][tKey])]);}
 						else
 						{
@@ -2806,7 +2897,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{
 					if(pClass["PRIVATE"]["FUNCTIONS"].hasOwnProperty(tKey))
 					{
-						if(gIS_STRICT_JS)
+						if(gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX)
 							{vCompiledClass.PRIVATE_FUNCTIONS.push([tKey, pClass["PRIVATE"]["FUNCTIONS"][tKey]]);}
 						else
 						{
@@ -2986,6 +3077,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		if(gClassPublicStatics[pClass.CRX_CLASS_ID] === undefined)
 		{
 			var tAreTherePublicStaticVarsToBeDelegated = false;
+			
+			if(gIS_USING_NEW_STATIC_SYNTAX)
+			{
+				gClassStaticThis[pClass.CRX_CLASS_ID] = {};
+			}
 
 			if(pClass.hasOwnProperty("PUBLIC"))
 			{
@@ -3036,15 +3132,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							}
 						}
 					}
-					if(!gIS_STRICT_JS && pClass["PUBLIC"]["STATIC"].hasOwnProperty("FUNCTIONS"))
+					if((!gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX) && pClass["PUBLIC"]["STATIC"].hasOwnProperty("FUNCTIONS"))
 					{
 						for(var tKey in pClass["PUBLIC"]["STATIC"]["FUNCTIONS"])
 						{
 							if(!pClass["PUBLIC"]["STATIC"]["FUNCTIONS"].hasOwnProperty(tKey))
 								{continue;}
 
-							gClassPublicStatics[pClass.CRX_CLASS_ID][tKey] =
-									static_call(pClass.CRX_CLASS_ID, pClass["PUBLIC"]["STATIC"]["FUNCTIONS"][tKey]);
+							setObjectReadOnlyMember(gClassPublicStatics[pClass.CRX_CLASS_ID],
+									tKey, static_call(pClass.CRX_CLASS_ID, pClass["PUBLIC"]["STATIC"]["FUNCTIONS"][tKey]));
 							signClassFunction(pClass["PUBLIC"]["STATIC"]["FUNCTIONS"][tKey], pClass.CRX_CLASS_ID, true);
 						}
 					}
@@ -3052,21 +3148,29 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 			else
 				{gClassPublicStatics[pClass.CRX_CLASS_ID] = null;}
+			
+			if(gIS_USING_NEW_STATIC_SYNTAX && gClassPublicStatics[pClass.CRX_CLASS_ID])
+				{gClassPrivateStatics[pClass.CRX_CLASS_ID] = gFunc_createObject(gClassPublicStatics[pClass.CRX_CLASS_ID]);}
 
 			if(pClass.hasOwnProperty("PRIVATE"))
 			{
-				if(tAreTherePublicStaticVarsToBeDelegated || pClass['PRIVATE'].hasOwnProperty("CONSTS") || pClass['PRIVATE'].hasOwnProperty("STATIC"))
+				if(gClassPrivateStatics[pClass.CRX_CLASS_ID] === undefined)
 				{
-					if(gClassPublicStatics[pClass.CRX_CLASS_ID] === null)
-						{gClassPrivateStatics[pClass.CRX_CLASS_ID] = {};}
-					else
+					if(tAreTherePublicStaticVarsToBeDelegated || 
+							pClass['PRIVATE'].hasOwnProperty("CONSTS") || 
+							pClass['PRIVATE'].hasOwnProperty("STATIC"))
 					{
-						gClassPrivateStatics[pClass.CRX_CLASS_ID] =
-								gFunc_createObject(gClassPublicStatics[pClass.CRX_CLASS_ID]);
+						if(gClassPublicStatics[pClass.CRX_CLASS_ID] === null)
+							{gClassPrivateStatics[pClass.CRX_CLASS_ID] = {};}
+						else
+						{
+							gClassPrivateStatics[pClass.CRX_CLASS_ID] =
+									gFunc_createObject(gClassPublicStatics[pClass.CRX_CLASS_ID]);
+						}
 					}
+					else
+						{gClassPrivateStatics[pClass.CRX_CLASS_ID] = null;}
 				}
-				else
-					{gClassPrivateStatics[pClass.CRX_CLASS_ID] = null;}
 
 				if(pClass['PRIVATE'].hasOwnProperty("CONSTS"))
 				{
@@ -3092,7 +3196,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 									pClass["PRIVATE"]["STATIC"]["VARS"][tKey];
 						}
 					}
-					if(!gIS_STRICT_JS && pClass["PRIVATE"]["STATIC"].hasOwnProperty("FUNCTIONS"))
+					if((!gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX) && pClass["PRIVATE"]["STATIC"].hasOwnProperty("FUNCTIONS"))
 					{
 						for(var tKey in pClass["PRIVATE"]["STATIC"]["FUNCTIONS"])
 						{
@@ -3122,6 +3226,18 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					}
 				}
 			}
+			
+			if(gIS_USING_NEW_STATIC_SYNTAX && gClassPrivateStatics[pClass.CRX_CLASS_ID])
+			{
+				setObjectReadOnlyMember(gClassStaticThis[pClass.CRX_CLASS_ID], "O", _this__STATIC(pClass.CRX_CLASS_ID));
+				//setObjectReadOnlyMember(gClassStaticThis[pClass.CRX_CLASS_ID], "C", _class__STATIC);
+				
+				setObjectReadOnlyMember(gClassStaticThis[pClass.CRX_CLASS_ID], "CRX_STATIC_INFO", secureClassData(
+				{
+					'CRX_CLASS_ID': pClass.CRX_CLASS_ID
+				}));
+				setObjectReadOnlyMember(gClassStaticThis[pClass.CRX_CLASS_ID], "STATIC", gClassPrivateStatics[pClass.CRX_CLASS_ID]);
+			}
 		}
 	}
 	
@@ -3146,11 +3262,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			{return null;}
 		prepareClass(vClass);
 
-		if(gAreConstantsToBeCopiedToObjects && (gCompiledClasses[vClass.CRX_CLASS_ID].PUBLIC_CONSTS.length > 0))
-			{_static__assertPublicConstants(vClass.CRX_CLASS_ID);}
-
 		if(gClassPublicStatics[vClass.CRX_CLASS_ID])
-			{return (gClassPublicStatics[vClass.CRX_CLASS_ID] || null);}
+		{
+			if(gAreConstantsToBeCopiedToObjects && (gCompiledClasses[vClass.CRX_CLASS_ID].PUBLIC_CONSTS.length > 0))
+				{_static__assertPublicConstants(vClass.CRX_CLASS_ID);}
+
+			return (gClassPublicStatics[vClass.CRX_CLASS_ID] || null);
+		}
 		else
 			{return null;}
 	}
@@ -3228,7 +3346,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					var tObject = this.PARENT;
 					
 					if((this === tClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[tClassID]) ||
-							(!gIS_STRICT_JS && isCallerFromClassOrAFriend(_sr.caller, tClassID, true)))
+							(!gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX && isCallerFromClassOrAFriend(_sr.caller, tClassID, true)))
 					{
 						return vObject[pMemberName].apply(tClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID],
 								Array.prototype.slice.call(arguments, 2));
@@ -3246,7 +3364,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					var tIsCallerAllowedProtectedAccess = false;
 					
 					if((this === tClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[tClassID]) ||
-							(!gIS_STRICT_JS && isCallerFromClassOrAFriend(_sr.caller, tClassID, true)))
+							(!gIS_STRICT_JS && !gIS_USING_NEW_STATIC_SYNTAX && isCallerFromClassOrAFriend(_sr.caller, tClassID, true)))
 						{tIsCallerAllowedProtectedAccess = true;}
 
 					while(tObject !== null)
@@ -3364,6 +3482,25 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		}
 		halt("SECURITY ERROR WHILE USING 'O'");
 	}
+	function _class(pClassDefinitionOrClassName)
+	{
+		if(gIsHalted){return;}
+
+		var vClass = getClassDefinition(pClassDefinitionOrClassName);
+		var vClassInfoObject = getClassInfoObject(this);
+		var vClassID = getObjectClassIDGivenClassInfoObject(this.THIS, vClassInfoObject);
+
+		if(vClass === null)
+			{return null;}
+		prepareClass(vClass);
+
+		if((vClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] === this) &&
+				gClassFriends[vClass.CRX_CLASS_ID].hasOwnProperty(vClassID))
+			{return (gClassPrivateStatics[vClass.CRX_CLASS_ID] || gClassPublicStatics[vClass.CRX_CLASS_ID] || null);}
+		else
+			{return (gClassPublicStatics[vClass.CRX_CLASS_ID] || null);}
+	}
+	
 
 	/*START: SUPPORT STATIC FUNCTIONS (NON STRICT JS MODE ONLY)*/
 	function _static__withStaticFunctionsSupport(pClass)
@@ -3387,6 +3524,63 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			{return null;}
 	}
 	/*END: SUPPORT STATIC FUNCTIONS (NON STRICT JS MODE ONLY)*/
+
+	/*START: NEW STATIC SYNTAX*/
+	function _this__STATIC(pClassID)
+	{
+		return function(pObject, pClassDefinitionOrClassName)
+		{
+			if(gIsHalted){return;}
+			return _this__STATIC_do(this, pClassID, pObject, pClassDefinitionOrClassName);
+		}
+	}
+	function _this__STATIC_do(pCallerThis, pClassID, pObject, pClassDefinitionOrClassName)
+	{
+		if(pCallerThis === gClassStaticThis[pClassID])
+		{
+			if(pClassDefinitionOrClassName === undefined)
+				{return getClassInfoObject(pObject).CRX_PRIVATE_OBJECT_SEGMENTS[pClassID] || null;}
+			else
+			{
+				var tObject = pObject.CAST(pClassDefinitionOrClassName);
+
+				if(tObject !== null)
+				{
+					var tClassInfoObject = getClassInfoObject(tObject);
+					var tClassID = getObjectClassIDGivenClassInfoObject(tObject, tClassInfoObject);
+
+					if(gClassFriends[tClassID].hasOwnProperty(pClassID))
+						{return tClassInfoObject.CRX_PRIVATE_OBJECT_SEGMENTS[tClassID];}
+					else
+					{
+						halt('ERROR USING \'O\'. CLASS "' + getClassNameOrID(gClassDefinitions[pClassID]) + '" IS NOT BE FRIENDED ' + 
+								'BY CLASS "' + getClassNameOrID(gClassDefinitions[tClassID]) + '"', -1);
+					}
+				}
+				else
+					{return null;}
+			}
+		}
+		halt("SECURITY ERROR WHILE USING 'O'");
+	}
+	function _class__STATIC(pClassDefinitionOrClassName)
+	{
+		if(gIsHalted){return;}
+
+		var vClass = getClassDefinition(pClassDefinitionOrClassName);
+		var vClassID = getStaticObjectID(this);
+
+		if(vClass === null)
+			{return null;}
+		prepareClass(vClass);
+
+		if((gClassStaticThis[pClass.CRX_CLASS_ID][vClassID] === this) &&
+				gClassFriends[vClass.CRX_CLASS_ID].hasOwnProperty(vClassID))
+			{return (gClassPrivateStatics[vClass.CRX_CLASS_ID] || gClassPublicStatics[vClass.CRX_CLASS_ID] || null);}
+		else
+			{return (gClassPublicStatics[vClass.CRX_CLASS_ID] || null);}
+	}
+	/*END: NEW STATIC SYNTAX*/
 	
 	function _annul()
 	{
@@ -4860,6 +5054,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	}
 	function assertIdentity(pServerInboundKey)
 	{
+		if(!gWindow)
+			{return true;}
+
 		var vMessage = "Security Error, exposed method overriden";
 
 		if(window.crx_new !== _new){halt(vMessage);return false;}
@@ -4881,6 +5078,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	}
 	function halt(pErrorMessage, pError)
 	{
+		var tMessage = null;
+
 		if(!gIsHalted)
 		{
 			if(!gIsRunningTestCasesMode)
@@ -4892,6 +5091,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				emptyObject(gClassVTables_lastOccurances);
 				emptyObject(gClassPublicStatics);
 				emptyObject(gClassPrivateStatics);
+				emptyObject(gClassStaticThis);
 
 				for(var tKey in gClassDefinitions)
 				{
@@ -4905,8 +5105,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			gHaltMessage = pErrorMessage;
 		}
 		
+		tMessage = "CrxOop FATAL ERROR:: " + gHaltMessage;
+
 		if(!gIsRunningTestCasesMode)
-			{gFunc_log("CrxOop FATAL ERROR:: " + gHaltMessage, 0);}
+			{gFunc_log(tMessage, 0);}
 
 		if(/*true ||*/ !gIsRunningTestCasesMode)
 		{
@@ -4915,18 +5117,21 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				if(pError === -1)
 				{
 					try
-					{
-						throw new Error("CrxOop FATAL ERROR:: " + gHaltMessage);
-					}
+						{throw new Error(tMessage);}
 					catch(tE)
-						{gTraceKitReport(tE, "CrxOop FATAL ERROR:: " + gHaltMessage);}
+						{gTraceKitReport(tE, tMessage);}
 				}
 				else
-					{gTraceKitReport(pError, "CrxOop FATAL ERROR:: " + gHaltMessage);}
+				{
+					if(gIS_BROWSER)
+						{gTraceKitReport(pError, tMessage);}
+					else
+						{tMessage = gTraceKitReport(pError, tMessage);}
+				}
 			}
 		}
 
-		throw "CrxOop FATAL ERROR:: " + gHaltMessage;
+		throw tMessage;
 	}
 	function emptyObject(pObject)
 	{
@@ -5061,13 +5266,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 							{return this;}
 					}
 					else 
-						{return pFunction.apply(pThis, vBoundArguments.concat(Array.prototype.slice.call(arguments)));}
+						{return pFunction.apply(((pThis === -1) ? this : pThis), vBoundArguments.concat(Array.prototype.slice.call(arguments)));}
 				};
 			}
 			else
 			{
 				vFunc = function()
-					{return pFunction.apply(pThis, vBoundArguments.concat(Array.prototype.slice.call(arguments)));}
+					{return pFunction.apply(((pThis === -1) ? this : pThis), vBoundArguments.concat(Array.prototype.slice.call(arguments)));}
 			}
 
 			if(pLength)
@@ -5139,35 +5344,35 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		return vInterval;
 	}
 	
-	setObjectReadOnlyMember(window, "crxOop", {});
-	setObjectReadOnlyMember(crxOop, "HASOWN_TYPE_VAR", HASOWN_TYPE_VAR);
-	setObjectReadOnlyMember(crxOop, "HASOWN_TYPE_FUNCTION", HASOWN_TYPE_FUNCTION);
-	setObjectReadOnlyMember(crxOop, "HASOWN_TYPE_FOREIGN", HASOWN_TYPE_FOREIGN);
-	setObjectReadOnlyMember(crxOop, "HASOWN_SCOPE_SHARED_PUBLIC", HASOWN_SCOPE_SHARED_PUBLIC);
-	setObjectReadOnlyMember(crxOop, "HASOWN_SCOPE_SHARED_PRIVATE", HASOWN_SCOPE_SHARED_PRIVATE);
-	setObjectReadOnlyMember(crxOop, "HASOWN_SCOPE_PRIVATE", HASOWN_SCOPE_PRIVATE);
-	setObjectReadOnlyMember(window, "crx_new", _new);
-	setObjectReadOnlyMember(window, "crx_registerClass", registerClass);
-	setObjectReadOnlyMember(window, "crx_registerInterface", registerInterface);
-	setObjectReadOnlyMember(window, "crx_registerStructure", registerStructure);
-	setObjectReadOnlyMember(window, "crx_static", (gIS_STRICT_JS ? _static : _static__withStaticFunctionsSupport));
-	setObjectReadOnlyMember(crxOop, "setLogger", setLogger);	
-	setObjectReadOnlyMember(crxOop, "isAnnul", _isAnnul);
+	setObjectReadOnlyMember(gCrxOop, "HASOWN_TYPE_VAR", HASOWN_TYPE_VAR);
+	setObjectReadOnlyMember(gCrxOop, "HASOWN_TYPE_FUNCTION", HASOWN_TYPE_FUNCTION);
+	setObjectReadOnlyMember(gCrxOop, "HASOWN_TYPE_FOREIGN", HASOWN_TYPE_FOREIGN);
+	setObjectReadOnlyMember(gCrxOop, "HASOWN_SCOPE_SHARED_PUBLIC", HASOWN_SCOPE_SHARED_PUBLIC);
+	setObjectReadOnlyMember(gCrxOop, "HASOWN_SCOPE_SHARED_PRIVATE", HASOWN_SCOPE_SHARED_PRIVATE);
+	setObjectReadOnlyMember(gCrxOop, "HASOWN_SCOPE_PRIVATE", HASOWN_SCOPE_PRIVATE);
+	setObjectReadOnlyMember(gCrxOop, "crx_new", _new);
+	setObjectReadOnlyMember(gCrxOop, "crx_registerClass", registerClass);
+	setObjectReadOnlyMember(gCrxOop, "crx_registerInterface", registerInterface);
+	setObjectReadOnlyMember(gCrxOop, "crx_registerStructure", registerStructure);
+	setObjectReadOnlyMember(gCrxOop, "crx_static", 
+			((gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX) ? _static : _static__withStaticFunctionsSupport));
+	setObjectReadOnlyMember(gCrxOop, "setLogger", setLogger);	
+	setObjectReadOnlyMember(gCrxOop, "isAnnul", _isAnnul);
 	//setObjectReadOnlyMember(window, "crxOop_assertFunctionIdentity", assertFunctionIdentity);
 	//setObjectReadOnlyMember(window, "crxOop_assertIdentity", assertIdentity);
-	setObjectReadOnlyMember(crxOop, "instanceOf", _instanceof);
+	setObjectReadOnlyMember(gCrxOop, "instanceOf", _instanceof);
 	//setObjectReadOnlyMember(window, "crxOop_instanceof", _instanceof);
-	setObjectReadOnlyMember(crxOop, "typeOf", _typeOf);
+	setObjectReadOnlyMember(gCrxOop, "typeOf", _typeOf);
 	//setObjectReadOnlyMember(window, "crxOop_typeof", _typeOf);
-	setObjectReadOnlyMember(crxOop, "isClassExtending", 
+	setObjectReadOnlyMember(gCrxOop, "isClassExtending", 
 			function(pClassDefinitionOrClassName1, pClassDefinitionOrClassName2)
 			{return isClassExtending(pClassDefinitionOrClassName1, pClassDefinitionOrClassName2, false);});
-	setObjectReadOnlyMember(crxOop, "isClassChaining", 
+	setObjectReadOnlyMember(gCrxOop, "isClassChaining", 
 			function(pClassDefinitionOrClassName1, pClassDefinitionOrClassName2)
 			{return isClassExtending(pClassDefinitionOrClassName1, pClassDefinitionOrClassName2, true);});
-	setObjectReadOnlyMember(crxOop, "isClassImplementing", isClassImplementing);
-	setObjectReadOnlyMember(crxOop, "isClassRegistered", isClassRegistered);
-	setObjectReadOnlyMember(crxOop, "getObjectClassName", function (pObject)
+	setObjectReadOnlyMember(gCrxOop, "isClassImplementing", isClassImplementing);
+	setObjectReadOnlyMember(gCrxOop, "isClassRegistered", isClassRegistered);
+	setObjectReadOnlyMember(gCrxOop, "getObjectClassName", function (pObject)
 	{
 		if(!pObject.CRX_CLASS_INFO || !pObject.THIS)
 			{return null;}
@@ -5179,15 +5384,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			{return gClassDefinitions[vClassID].CRX_CLASS_NAME;}
 		return null;
 	});
-	setObjectReadOnlyMember(crxOop, "isInterfaceRegistered", isInterfaceRegistered);
-	setObjectReadOnlyMember(crxOop, "isStructureInheriting", 
+	setObjectReadOnlyMember(gCrxOop, "isInterfaceRegistered", isInterfaceRegistered);
+	setObjectReadOnlyMember(gCrxOop, "isStructureInheriting", 
 			function(pStructureDefinitionOrStructureName1, pStructureDefinitionOrStructureName2)
 			{return isStructureInheriting(pStructureDefinitionOrStructureName1, pStructureDefinitionOrStructureName2, false);});
-	setObjectReadOnlyMember(crxOop, "isStructureContaining",
+	setObjectReadOnlyMember(gCrxOop, "isStructureContaining",
 			function(pStructureDefinitionOrStructureName1, pStructureDefinitionOrStructureName2)
 			{return isStructureInheriting(pStructureDefinitionOrStructureName1, pStructureDefinitionOrStructureName2, true);});
-	setObjectReadOnlyMember(crxOop, "isStructureRegistered", isStructureRegistered);
-	setObjectReadOnlyMember(crxOop, "getObjectStructureName", function (pObject)
+	setObjectReadOnlyMember(gCrxOop, "isStructureRegistered", isStructureRegistered);
+	setObjectReadOnlyMember(gCrxOop, "getObjectStructureName", function (pObject)
 	{
 		if(!pObject.CRX_STRUCTURE_INFO)
 			{return null;}
@@ -5199,7 +5404,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			{return gStructureDefinitions[vStructureID].CRX_STRUCTURE_NAME;}
 		return null;
 	});
-	setObjectReadOnlyMember(crxOop, "getObjectStructureNames", function (pObject)
+	setObjectReadOnlyMember(gCrxOop, "getObjectStructureNames", function (pObject)
 	{
 		if(!pObject.CRX_STRUCTURE_INFO)
 			{return null;}
@@ -5233,20 +5438,32 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 		return vReturn;
 	});
-	setObjectReadOnlyMember(crxOop, "areStaticFunctionsSupported", function(){return !gIS_STRICT_JS;});
-	setObjectReadOnlyMember(crxOop, "createObject", gFunc_createObject);
-	setObjectReadOnlyMember(crxOop, "setStrictMode", function(pIsStrictMode){if(gIsStarted){return;} gIS_STRICT_MODE = pIsStrictMode;});
-	setObjectReadOnlyMember(crxOop, "areStructuresLocked", function(){return gIsReadOnlyWriteSupported && Object.seal && gFunc_freezeObject && gIS_STRICT_MODE;});
-	setObjectReadOnlyMember(crxOop, "areConstantsLocked", function(){return crxOop.areStructuresLocked() || gAreConstantsToBeCopiedToObjects;});
-	setObjectReadOnlyMember(crxOop, "var", crxOop_var);
-	setObjectReadOnlyMember(crxOop, "bindFunction", crxOop_bind);
-	setObjectReadOnlyMember(crxOop, "setTimeout", crxOop_setTimeout);
-	setObjectReadOnlyMember(crxOop, "setInterval", crxOop_setInterval);
-	setObjectReadOnlyMember(crxOop, "nativeTypeOf", getType);
-	setObjectReadOnlyMember(crxOop, "setRunningTestCasesMode", function(pIsRunningTestCases){if(gIsStarted){return;}if(pIsRunningTestCases){gIsRunningTestCasesMode = true;}});
-	setObjectReadOnlyMember(crxOop, "unHalt", function(pMessage){if(gIsRunningTestCasesMode){if(!gIsHalted){halt("UNHALTING WHEN NOT HALTED: " + pMessage);} gIsHalted = false;}});
-	
-	/*window.crxOop_halt = halt;*/
+	setObjectReadOnlyMember(gCrxOop, "areStaticFunctionsSupported", function(){return (!gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX);});
+	setObjectReadOnlyMember(gCrxOop, "isUsingNewStaticFunctionsSyntax", function(){return gIS_USING_NEW_STATIC_SYNTAX;});
+	setObjectReadOnlyMember(gCrxOop, "createObject", gFunc_createObject);
+	setObjectReadOnlyMember(gCrxOop, "setStrictMode", function(pIsStrictMode){if(gIsStarted){return;} gIS_STRICT_MODE = pIsStrictMode;});
+	setObjectReadOnlyMember(gCrxOop, "areStructuresLocked", function(){return gIsReadOnlyWriteSupported && Object.seal && gFunc_freezeObject && gIS_STRICT_MODE;});
+	setObjectReadOnlyMember(gCrxOop, "areConstantsLocked", function(){return gCrxOop.areStructuresLocked() || gAreConstantsToBeCopiedToObjects;});
+	setObjectReadOnlyMember(gCrxOop, "var", crxOop_var);
+	setObjectReadOnlyMember(gCrxOop, "bindFunction", crxOop_bind);
+	setObjectReadOnlyMember(gCrxOop, "setTimeout", crxOop_setTimeout);
+	setObjectReadOnlyMember(gCrxOop, "setInterval", crxOop_setInterval);
+	setObjectReadOnlyMember(gCrxOop, "nativeTypeOf", getType);
+	setObjectReadOnlyMember(gCrxOop, "setRunningTestCasesMode", function(pIsRunningTestCases){if(gIsStarted){return;}if(pIsRunningTestCases){gIsRunningTestCasesMode = true;}});
+	setObjectReadOnlyMember(gCrxOop, "unHalt", function(pMessage){if(gIsRunningTestCasesMode){if(!gIsHalted){halt("UNHALTING WHEN NOT HALTED: " + pMessage);} gIsHalted = false;}});
+
+	if(gWindow)
+	{
+		setObjectReadOnlyMember(gWindow, "crxOop", gCrxOop);
+		setObjectReadOnlyMember(gWindow, "crx_new", _new);
+		setObjectReadOnlyMember(gWindow, "crx_registerClass", registerClass);
+		setObjectReadOnlyMember(gWindow, "crx_registerInterface", registerInterface);
+		setObjectReadOnlyMember(gWindow, "crx_registerStructure", registerStructure);
+		setObjectReadOnlyMember(gWindow, "crx_static", 
+				((gIS_STRICT_JS || gIS_USING_NEW_STATIC_SYNTAX) ? _static : _static__withStaticFunctionsSupport));
+	}
+
+	/*gWindow.crxOop_halt = halt;*/
 
 	try{throw new Error('CrxOop::end');}catch(tE){gTraceKitReport(tE);}
 })();
