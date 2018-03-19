@@ -34,3 +34,242 @@ Supported Features (POBP):
 
 
 For details and documentation refer to http://EyeAndTea.com
+
+
+
+## Example code (from documentation above)
+
+```javascript
+crx_registerInterface("InterfaceA",
+{
+	"interfaceAFunction": 0
+});
+crx_registerInterface("InterfaceB",
+{
+	"interfaceBFunction": 0
+});
+crx_registerInterface("InterfaceC",
+{
+	INHERITS: ["InterfaceA", "InterfaceB"],
+	"interfaceCFunction1": 0,
+	"interfaceCFunction2": 0
+});
+crx_registerInterface("InterfaceD",
+{
+	"interfaceDFunction": 0
+});
+									
+crx_registerClass("classA",
+{
+	"VERBOSE": 1,
+	"FRIENDS": ["classD"],
+									
+	"PUBLIC CONSTRUCT": function()
+	{
+		console.log("CONSTRUCTING A");
+	},
+	"PUBLIC VAR publicVar": "classA::publicVar",
+	"PUBLIC VAR publicVar2": 5,
+	"PUBLIC VAR publicVar3": [0, 0, 0, 0, 0],
+	"PUBLIC STATIC VAR publicStaticVar": "classA::publicStaticVar",
+	"PUBLIC STATIC FUNCTION publicStaticFunction": function(pClassA)
+	{
+		console.log("[START]classA::publicStaticFunction()");
+		this.STATIC.privateStaticFunction(5);
+		console.log(crx_static("classA").publicStaticVar); //OR this.STATIC.publicStaticVar
+		console.log(this.STATIC.privateStaticVar);
+		console.log(this.O(pClassA).privateVar);
+		console.log("[END]classA::publicStaticFunction()");
+	},
+	"PUBLIC FUNCTION publicFunction": function(pA)
+	{
+		console.log("classA::publicFunction()");
+	},
+	"PUBLIC FUNCTION test": function(pA)
+	{
+		console.log("[START]classA::test()");
+		this.publicVirtualFunction(5);
+		this.privateVirtualFunction(5);
+		this.publicPureVirtualFunction(5);
+		this.privatePureVirtualFunction(5);
+		this.protectedPureVirtualFunction(5);
+		this.publicFunction(5);
+		this.privateFunction(5);
+		this.STATIC.privateStaticFunction(5);
+		console.log(this.STATIC.publicStaticVar);
+		console.log(this.STATIC.privateStaticVar);
+		console.log("[END]classA::test()");
+		return this.THIS;
+	},
+	"PUBLIC VIRTUAL FUNCTION publicVirtualFunction": function(pA)
+	{
+		console.log("classA::publicVirtualFunction()");
+	},
+	"PUBLIC VIRTUAL FUNCTION publicPureVirtualFunction": 0,
+	"PRIVATE VAR privateVar": "classA::privateVar",
+	"PRIVATE STATIC VAR privateStaticVar": "classA::privateStaticVar",
+	"PRIVATE STATIC FUNCTION privateStaticFunction": function(pA)
+	{
+		console.log("classA::privateStaticFunction()");
+	},
+	"PRIVATE FUNCTION privateFunction": 	function(pA)
+	{
+		console.log("classA::privateFunction()");
+	},
+	"PRIVATE VIRTUAL FUNCTION privateVirtualFunction": function(pA)
+	{
+		console.log("classA::privateVirtualFunction()");
+	},
+	"PRIVATE VIRTUAL FUNCTION privatePureVirtualFunction": 0,
+									
+	"PROTECTED FUNCTION protectedFunction": 	function(pA)
+	{
+		console.log("classA::protectedFunction()");
+	},
+	"PROTECTED VIRTUAL FUNCTION protectedVirtualFunction": function(pA)
+	{
+		console.log("classA::protectedVirtualFunction()");
+	},
+	"PROTECTED VIRTUAL FUNCTION protectedPureVirtualFunction": 0
+									
+});
+crx_registerClass("classB",
+{
+	"VERBOSE": 1,
+	"IMPLEMENTS": ["InterfaceC", "InterfaceD"],
+	"EXTENDS": "classA",
+	"PUBLIC CONSTRUCT": function(pA)
+	{
+		console.log("CONSTRUCTING B");
+	},
+	"PUBLIC VAR publicVar": "classB::publicVar",
+	"PUBLIC FUNCTION publicFunction": function(pA)
+	{
+		console.log("classB::publicFunction()");
+		if(pA != 1)
+			{this.publicFunction(1);}
+		this.PARENT.publicFunction(5);
+	},
+	"PUBLIC FUNCTION test": function(pA)
+	{
+		console.log("[START]classB::test()");
+		this.publicVirtualFunction(5);
+		this.publicFunction(5);
+		this.CAST("classA").publicFunction(5);
+		console.log("[END]classB::test()");
+		return this.THIS;
+	},
+	"PUBLIC VIRTUAL FUNCTION publicVirtualFunction": function(pA)
+	{
+		console.log("classB::publicVirtualFunction()");
+		this.SR(null, "publicVirtualFunction", pA);
+	},
+	"PUBLIC VIRTUAL FUNCTION interfaceAFunction": function(pA)
+		{},
+	"PUBLIC VIRTUAL FUNCTION interfaceBFunction": function(pA)
+		{},
+	"PUBLIC VIRTUAL FUNCTION interfaceCFunction1": function(pA)
+		{},
+	"PUBLIC VIRTUAL FUNCTION interfaceCFunction2": function(pA)
+		{},
+	"PUBLIC VIRTUAL FUNCTION interfaceDFunction": function(pA)
+		{}
+});
+crx_registerClass("classC",
+{
+	"VERBOSE": 1,
+	"EXTENDS": "classB",
+	"PUBLIC CONSTRUCT": function()
+	{
+		this.PARENT.CONSTRUCT(5);
+		console.log("CONSTRUCTING C");
+	},
+	"PUBLIC VIRTUAL FUNCTION publicVirtualFunction": function(pA)
+	{
+		console.log("classC::publicVirtualFunction()");
+		this.SR("classA", "publicVirtualFunction", pA);
+		this.SR("classA", "publicFunction", pA);
+		this.SR("classA", "publicVar2", 6);
+		this.SR("classA", "publicVar3")[0] = 1;
+		console.log(this.SR("classA", "publicVar3")[0]);
+	},
+	"PUBLIC VIRTUAL FUNCTION publicPureVirtualFunction": function(pA)
+	{
+		console.log("classC::publicPureVirtualFunction()\n");
+	},
+	"PRIVATE VIRTUAL FUNCTION privatePureVirtualFunction": function(pA)
+	{
+		console.log("classC::privatePureVirtualFunction()");
+	},
+	"PROTECTED VIRTUAL FUNCTION protectedPureVirtualFunction": function(pA)
+	{
+		console.log("classC::protectedPureVirtualFunction()");
+	}
+});
+									
+crx_registerClass('classD',
+{
+	"VERBOSE": 1,
+	"PUBLIC FUNCTION test": function(pClassA)
+	{
+		console.log("[START]classD::test()");
+		console.log(this.O(pClassA, "classA").privateVar);
+		this.O(pClassA, "classA").privatePureVirtualFunction(5);
+		this.O(pClassA, "classA").protectedFunction(5);
+		console.log("[END]classD::test()");
+	}
+});
+var a = crx_new("classC");
+var b = crx_new("classD");
+									
+a.test(5);
+a.CAST("classA").test(5);
+crx_static("classA").publicStaticFunction(a.CAST("classA"));
+b.test(a.CAST("classA"));
+```
+
+
+And the result:
+
+```text
+CONSTRUCTING B
+CONSTRUCTING A
+CONSTRUCTING C
+[START]classB::test()
+classC::publicVirtualFunction()
+classA::publicVirtualFunction()
+classA::publicFunction()
+1
+classB::publicFunction()
+classB::publicFunction()
+classA::publicFunction()
+classA::publicFunction()
+classA::publicFunction()
+[END]classB::test()
+[START]classA::test()
+classC::publicVirtualFunction()
+classA::publicVirtualFunction()
+classA::publicFunction()
+1
+classA::privateVirtualFunction()
+classC::publicPureVirtualFunction()
+classC::privatePureVirtualFunction()
+classC::protectedPureVirtualFunction()
+classA::publicFunction()
+classA::privateFunction()
+classA::privateStaticFunction()
+classA::publicStaticVar
+classA::privateStaticVar
+[END]classA::test()
+[START]classA::publicStaticFunction()
+classA::privateStaticFunction()
+classA::publicStaticVar
+classA::privateStaticVar
+classA::privateVar
+[END]classA::publicStaticFunction()
+[START]classD::test()
+classA::privateVar
+classC::privatePureVirtualFunction()
+classA::protectedFunction()
+[END]classD::test()
+```
