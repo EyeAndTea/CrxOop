@@ -63,7 +63,6 @@ crx_registerClass("classA",
 {
 	"VERBOSE": 1,
 	"FRIENDS": ["classD"],
-									
 	"PUBLIC CONSTRUCT": function()
 	{
 		console.log("CONSTRUCTING A");
