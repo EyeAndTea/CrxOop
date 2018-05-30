@@ -35,6 +35,7 @@ Supported Features (POBP):
 
 For details and documentation refer to http://EyeAndTea.com
 
+If you are using this on Node.js make sure to read http://eyeandtea.com/crxoop/v2/ch09.
 
 
 ## Example code (from documentation above)
