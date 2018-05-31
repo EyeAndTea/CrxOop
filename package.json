@@ -1,6 +1,6 @@
 {
 	"name": "crx-oop",
-	"version": "2.6.2",
+	"version": "2.6.3",
 	"description": "Object Oriented Programming (Classical), and Prototype Object Based Programming for Javascript",
 	"main": "crxOop.js",
 	"homepage": "http://eyeandtea.com",
@@ -8,5 +8,24 @@
 	{
 		"url" : "https://github.com/EyeAndTea/CrxOop"
 	},
+	"keywords":
+	[
+		"object oriented",
+		"classical object oriented",
+		"classical"
+		"class",
+		"interface",
+		"structure",
+		"prototype",
+		"prototype based",
+		"prototype object based",
+		"multiple inheritance",
+		"destructor",
+		"constructor",
+		"OOP",
+		"POBP",
+		"polymorphism",
+		"encapsulation"
+	],
 	"license": "MIT"
 }

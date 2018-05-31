@@ -35,10 +35,10 @@ Supported Features (POBP):
 
 For details and documentation refer to http://EyeAndTea.com
 
-If you are using this on Node.js make sure to read http://eyeandtea.com/crxoop/v2/ch09.
+If you are using this on Node.js make sure to read http://EyeAndTea.com/crxoop/v2/ch09.
 
 
-## Example code (from documentation above)
+## Example code (from documentation link above)
 
 ```javascript
 crx_registerInterface("InterfaceA",
