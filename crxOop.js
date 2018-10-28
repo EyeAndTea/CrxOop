@@ -1,4 +1,4 @@
-//version: 2.6.3
+//version: 2.6.4
 /*
 The MIT License (MIT) 
 
@@ -3692,6 +3692,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	}
 	function _typeOf(pObject)
 	{
+		if((pObject === null) || (pObject === undefined))
+			{return "$CRX__native";}
 		if(pObject.CRX_DEFINITION)
 		{
 			if(pObject.CRX_INTERFACE_ID && (gInterfaceDefinitions[pObject.CRX_INTERFACE_ID] === pObject))
