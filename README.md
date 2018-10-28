@@ -17,6 +17,7 @@ Supported Features (classical OOP):
 - Abstract Classes.
 - Anonymous Classes.
 - Interfaces (a Class with only public pure virtual methods).
+- Annul. A mechanism to help build destructors/finalizers.
 
 
 V1.4 of the library introduces a formalization of Prototype Based Programming, or as this author likes to call it, Prototype Object Based Programming (POBP).
