@@ -1,4 +1,4 @@
-//version: 2.6.4
+//version: 2.6.5
 /*
 The MIT License (MIT) 
 
@@ -524,7 +524,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			pClassDefinition.CRX_CLASS_NAME = pClassName;
 
 			if((pClassDefinition.CRX_DEFINITION !== true) || (pClassDefinition.CRX_CLASS_ID !== pClassDefinition.CRX_CLASS_ID) ||
-					(pClassDefinition.CRX_CLASS_NAME !== pClassName) || (pClassDefinition.CRX_INTERFACE_ID !== undefined))
+					(pClassDefinition.CRX_CLASS_NAME !== pClassName) || (pClassDefinition.CRX_INTERFACE_ID !== void(0)))
 				{halt("UNKNOWN ERROR IN DEFINITION OF CLASS '" + pClassName + "'", -1);}
 			gFunc_freezeObject(pClassDefinition);
 
@@ -547,8 +547,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			}
 		}
 		else if((pClassDefinitionOrClassName === null) || (typeof(pClassDefinitionOrClassName) !== "object") || 
-				(pClassDefinitionOrClassName.CRX_INTERFACE_ID !== undefined) ||
-				(pClassDefinitionOrClassName.CRX_STRUCTURE_ID !== undefined))
+				(pClassDefinitionOrClassName.CRX_INTERFACE_ID !== void(0)) ||
+				(pClassDefinitionOrClassName.CRX_STRUCTURE_ID !== void(0)))
 			{return null;}
 		else
 		{
@@ -605,7 +605,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if((pInterface.CRX_DEFINITION !== true) || (pInterface.CRX_INTERFACE_ID !== gInterfaceIDCounter) ||
 					(pInterface.CRX_INTERFACE_NAME !== pInterfaceName) ||
-					(pInterface.CRX_CLASS_ID !== undefined))
+					(pInterface.CRX_CLASS_ID !== void(0)))
 				{halt("UNKNOWN ERROR IN DEFINITION OF INTERFACE '" + pInterfaceName + "'", -1);}
 			gFunc_freezeObject(pInterface);
 
@@ -626,8 +626,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{return (gInterfaceDefinitions[gInterfaceSignatures[pInterfaceOrInterfaceName]] || null);}
 		}
 		else if((pInterfaceOrInterfaceName === null) || (typeof(pInterfaceOrInterfaceName) !== "object") || 
-				(pInterfaceOrInterfaceName.CRX_CLASS_ID !== undefined) ||
-				(pInterfaceOrInterfaceName.CRX_STRUCTURE_ID !== undefined))
+				(pInterfaceOrInterfaceName.CRX_CLASS_ID !== void(0)) ||
+				(pInterfaceOrInterfaceName.CRX_STRUCTURE_ID !== void(0)))
 			{return null;}
 		else
 		{
@@ -684,8 +684,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if((pStructure.CRX_DEFINITION !== true) || (pStructure.CRX_STRUCTURE_ID !== gStructureIDCounter) ||
 					(pStructure.CRX_STRUCTURE_NAME !== pStructureName) ||
-					(pStructure.CRX_CLASS_ID !== undefined) ||
-					(pStructure.CRX_INTERFACE_ID !== undefined))
+					(pStructure.CRX_CLASS_ID !== void(0)) ||
+					(pStructure.CRX_INTERFACE_ID !== void(0)))
 				{halt("UNKNOWN ERROR IN DEFINITION OF STRUCTRE '" + pStructureName + "'", -1);}
 			gFunc_freezeObject(pStructure);
 
@@ -706,8 +706,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				{return (gStructureDefinitions[gStructureSignatures[pStructureOrStructureName]] || null);}
 		}
 		else if((pStructureOrStructureName === null) || (typeof(pStructureOrStructureName) !== "object") || 
-				(pStructureOrStructureName.CRX_CLASS_ID !== undefined) ||
-				(pStructureOrStructureName.CRX_INTERFACE_ID !== undefined))
+				(pStructureOrStructureName.CRX_CLASS_ID !== void(0)) ||
+				(pStructureOrStructureName.CRX_INTERFACE_ID !== void(0)))
 			{return null;}
 		else
 		{
@@ -1629,10 +1629,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					{break;}
 			}
 
-			return undefined;
+			return void(0);
 		}
 		else
-			{return undefined;}
+			{return void(0);}
 	}
 	function static_call(pClassID, pFunction) //THIS ALSO SUPPORTS NEW STATIC SYNTAX
 	{
@@ -1694,7 +1694,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			if((this === pPublicThis) && (gStaticContext[0] === pClassID) && (vFunction.caller === gStaticContext[1]))
 				{return pPrivateThis[pKey];}
 			else
-				{return undefined;}
+				{return void(0);}
 		}*/
 		/*function vFunction2(pValue)
 			{setMemberPrivateCapture_setter(this, pClassID, pPrivateThis, pPublicThis, pKey, vFunction2.caller, pValue);}*/
@@ -1764,7 +1764,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		/*var vKey = gCODE_KEY;
 		var vReturn = pObject.CRX_CLASS_INFO(gCODE_KEY);
 		
-		if((vKey === gCODE_KEY) || (vReturn === undefined))
+		if((vKey === gCODE_KEY) || (vReturn === void(0)))
 			{halt('SECURITY ERROR, ACCESS VIOLATION');}*/
 		
 		var vReturn = null;
@@ -1871,8 +1871,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	}
 	function inspectClassDefinition_processVerboseDefinition(pClassDefinition, pIsStructure)
 	{
-		if((!pIsStructure && (gClassesWithVerboseDefinitions[pClassDefinition.CRX_CLASS_ID] !== undefined)) ||
-				(pIsStructure && (gStructuresWithVerboseDefinitions[pClassDefinition.CRX_STRUCTURE_ID] !== undefined)))
+		if((!pIsStructure && (gClassesWithVerboseDefinitions[pClassDefinition.CRX_CLASS_ID] !== void(0))) ||
+				(pIsStructure && (gStructuresWithVerboseDefinitions[pClassDefinition.CRX_STRUCTURE_ID] !== void(0))))
 			{return;}
 		for(var tKey in pClassDefinition)
 		{
@@ -3074,7 +3074,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	];
 	function buildStatics(pClass)
 	{
-		if(gClassPublicStatics[pClass.CRX_CLASS_ID] === undefined)
+		if(gClassPublicStatics[pClass.CRX_CLASS_ID] === void(0))
 		{
 			var tAreTherePublicStaticVarsToBeDelegated = false;
 			
@@ -3154,7 +3154,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if(pClass.hasOwnProperty("PRIVATE"))
 			{
-				if(gClassPrivateStatics[pClass.CRX_CLASS_ID] === undefined)
+				if(gClassPrivateStatics[pClass.CRX_CLASS_ID] === void(0))
 				{
 					if(tAreTherePublicStaticVarsToBeDelegated || 
 							pClass['PRIVATE'].hasOwnProperty("CONSTS") || 
@@ -3287,7 +3287,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		var vClassID = null;
 		var vObject = null;
 
-		if((pClassDefinitionOrClassName !== undefined) && (pClassDefinitionOrClassName !== null))
+		if((pClassDefinitionOrClassName !== void(0)) && (pClassDefinitionOrClassName !== null))
 		{
 			vClassID = getClassID(pClassDefinitionOrClassName);
 			vObject = this.CAST(pClassDefinitionOrClassName);
@@ -3456,7 +3456,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 			if(vClassID !== null)
 			{
-				if(pClassDefinitionOrClassName === undefined)
+				if(pClassDefinitionOrClassName === void(0))
 					{return getClassInfoObject(pObject).CRX_PRIVATE_OBJECT_SEGMENTS[vClassID] || null;}
 				else
 				{
@@ -3538,7 +3538,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	{
 		if(pCallerThis === gClassStaticThis[pClassID])
 		{
-			if(pClassDefinitionOrClassName === undefined)
+			if(pClassDefinitionOrClassName === void(0))
 				{return getClassInfoObject(pObject).CRX_PRIVATE_OBJECT_SEGMENTS[pClassID] || null;}
 			else
 			{
@@ -3692,7 +3692,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	}
 	function _typeOf(pObject)
 	{
-		if((pObject === null) || (pObject === undefined))
+		if((pObject === null) || (pObject === void(0)))
 			{return "$CRX__native";}
 		if(pObject.CRX_DEFINITION)
 		{
@@ -4075,7 +4075,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 						var vSharedInfoObject = getStructureInfoObject(this);
 						var vStructureID = vSharedInfoObject.currentStructureID;
-						var vReturn = undefined;
+						var vReturn = void(0);
 
 						vSharedInfoObject.CRX_STRUCTURE_ID = pStructureID;
 						vReturn = pFunction.apply(getStructureInfoObject(this).CRX_PRIVATE_SEGMENTS[pStructureID],
@@ -4786,7 +4786,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		var vClassInfoObject_caller = null;
 		var vStructureID_caller = null;
 
-		if((pStructureDefinitionOrStructureName !== undefined) && (pStructureDefinitionOrStructureName !== null))
+		if((pStructureDefinitionOrStructureName !== void(0)) && (pStructureDefinitionOrStructureName !== null))
 		{
 			vClassInfoObject_caller = getStructureInfoObject(this);
 			vStructureID = getStructureID(pStructureDefinitionOrStructureName);
@@ -4813,7 +4813,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 				if(this === vClassInfoObject_caller.CRX_PRIVATE_SEGMENTS[vStructureID_caller])
 				{
 					if(gStructureMemberTypes[vStructureID][pMemberName] === MEMBER_TYPE_VAR)
-						{return undefined; /*this[pMemberName];*/}
+						{return void(0); /*this[pMemberName];*/}
 					else
 						{return gStructureFTables[vStructureID]["shpr"][pMemberName].apply(vObject, Array.prototype.slice.call(arguments, 2));}
 				}
@@ -4821,7 +4821,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			else if(gStructureMemberScopes[vStructureID][pMemberName] === SCOPE_SHARED_PUBLIC)
 			{
 				if(gStructureMemberTypes[vStructureID][pMemberName] === MEMBER_TYPE_VAR)
-					{return undefined; /*this[pMemberName];*/}
+					{return void(0); /*this[pMemberName];*/}
 				else
 					{return gStructureFTables[vStructureID]["shpu"][pMemberName].apply(this, Array.prototype.slice.call(arguments, 2));}
 			}
