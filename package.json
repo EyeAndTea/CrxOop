@@ -1,6 +1,6 @@
 {
 	"name": "crx-oop",
-	"version": "2.6.5",
+	"version": "2.6.6",
 	"description": "Object Oriented Programming (Classical), and Prototype Object Based Programming for Javascript",
 	"main": "crxOop.js",
 	"homepage": "http://eyeandtea.com",

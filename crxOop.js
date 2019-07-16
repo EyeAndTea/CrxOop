@@ -1,4 +1,4 @@
-//version: 2.6.5
+//version: 2.6.6
 /*
 The MIT License (MIT) 
 
@@ -139,7 +139,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 	var gTestObject = {};
 	var gTraceKitReport = null;
 	var gStackKitHandler = null;
-	var gTraceKitError = "";
+	//var gTraceKitError = "";
 	var gError_start = null;
 	var gError_end = null;
 	var gWereCodeBoundriesEvaluated = false;
@@ -382,7 +382,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		gTraceKitReport = function(pError, pMessage)
 		{
 			var tRegExp = new RegExp(".*?[\\(\\[\\s\\:](\\d+)([:]+(\\d*))?.*");
-			var tRegExp2 = new RegExp(".+\\/([^\\/]+\\.js)[^a-zA-Z\\\"\\']*");
+			var tRegExp2 = new RegExp(".+[\\/\\\\]([^\\/\\\\]+\\.js)[^a-zA-Z\\\"\\']*");
 
 			if((pError.message === 'CrxOop::start') || (pError.message === 'CrxOop::end'))
 			{
@@ -406,8 +406,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 					}
 
 					tObject = {"fileName": ((tMatches2 && tMatches2[1]) ? tMatches2[1].toLowerCase() : null),
-							"line": ((tMatches && tMatches[1]) ? tMatches[1] : -1), 
-							"column": ((tMatches && tMatches[3]) ? tMatches[3] : -1)};
+							"line": ((tMatches && tMatches[1]) ? parseInt(tMatches[1]) : -1), 
+							"column": ((tMatches && tMatches[3]) ? parseInt(tMatches[3]) : -1)};
+
+					tObject["line"] = (tObject["line"] ? tObject["line"] : -1);
+					tObject["column"] = (tObject["column"] ? tObject["column"] : -1);
 				}
 
 				if((pError.message === 'CrxOop::start') && (gError_start === null))
@@ -5329,7 +5332,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			vFunction();
 		};
 
-		return window.setTimeout.apply(window, arguments);
+		if(arguments.length === 1)
+			{return window.setTimeout(arguments[0]);}
+		else if(arguments.length === 2)
+			{return window.setTimeout(arguments[0], arguments[1]);}
+		else
+			{return window.setTimeout.apply(window, arguments);}
 	}
 	function crxOop_setInterval()
 	{
@@ -5341,7 +5349,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 			if(gIsHalted){window.clearInterval(vInterval); return;}
 			vFunction();
 		};
-		vInterval = window.setInterval.apply(window, arguments);
+
+		if(arguments.length === 2)
+			{vInterval = window.setInterval(arguments[0], arguments[1]);}
+		else
+			{vInterval = window.setInterval.apply(window, arguments);}
 
 		return vInterval;
 	}
