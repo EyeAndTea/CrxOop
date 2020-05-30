@@ -1,4 +1,4 @@
-//version: 2.6.6
+//version: 2.6.7
 /*
 The MIT License (MIT) 
 
@@ -323,15 +323,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 		{
 			if((pError.message === 'CrxOop::start') || (pError.message === 'CrxOop::end'))
 			{
-				window.StackTrace.fromError(pError).then(function(pError)
+				window.StackTrace.fromError(pError).then(function(pError2)
 				{
 					var tObject = null;
 
-					if(pError.length > 0)
+					if(pError2.length > 0)
 					{
-						tObject = {"fileName": (pError[0].fileName ? pError[0].fileName.toLowerCase() : null), 
-								"line": (pError[0].lineNumber ? pError[0].lineNumber : -1), 
-								"column": (pError[0].columnNumber ? pError[0].columnNumber : -1)};
+						tObject = {"fileName": (pError2[0].fileName ? pError2[0].fileName.toLowerCase() : null), 
+								"line": (pError2[0].lineNumber ? pError2[0].lineNumber : -1), 
+								"column": (pError2[0].columnNumber ? pError2[0].columnNumber : -1)};
 					}
 
 					if((pError.message === 'CrxOop::start') && (gError_start === null))
@@ -342,7 +342,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 						gWereCodeBoundriesEvaluated = true;
 					}
 					//g_Func_log(vMessage, 0);
-				})['catch'](function(pError)
+				})['catch'](function(pError2)
 				{
 				});
 			}

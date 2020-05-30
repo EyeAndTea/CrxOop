@@ -1,9 +1,14 @@
 {
 	"name": "crx-oop",
-	"version": "2.6.6",
+	"version": "2.6.7",
 	"description": "Object Oriented Programming (Classical), and Prototype Object Based Programming for Javascript",
 	"main": "crxOop.js",
 	"homepage": "http://eyeandtea.com",
+	"repository":
+	{
+		"type" : "git",
+		"url" : "https://github.com/EyeAndTea/CrxOop.git"
+	},
 	"bugs" :
 	{
 		"url" : "https://github.com/EyeAndTea/CrxOop"
@@ -27,7 +32,8 @@
 		"polymorphism",
 		"virtual function",
 		"abstraction",
-		"encapsulation"
+		"encapsulation",
+		"crxoop"
 	],
 	"license": "MIT"
 }
